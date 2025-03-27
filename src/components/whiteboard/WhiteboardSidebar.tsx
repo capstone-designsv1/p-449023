@@ -69,49 +69,14 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
 
   return (
     <div className="w-80 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
+      {/* Challenge Brief Section */}
       <div className="mb-6">
         <h2 className="text-lg font-semibold mb-2">Challenge Brief</h2>
         <p className="text-gray-700 mb-4">{description}</p>
       </div>
       
-      {/* Sticky Notes Section */}
+      {/* Final Answer Section - Moved up */}
       <div className="mb-6">
-        <h3 className="text-md font-semibold mb-2">Your Notes</h3>
-        <Textarea
-          value={newNoteText}
-          onChange={(e) => setNewNoteText(e.target.value)}
-          placeholder="Type your note here..."
-          className="min-h-[80px] mb-3"
-        />
-        <Button 
-          onClick={addStickyNote}
-          className="w-full bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)] mb-4"
-        >
-          Add Note
-        </Button>
-        
-        {/* Display Notes */}
-        <div className="space-y-3 max-h-[200px] overflow-y-auto">
-          {notes.map((note) => (
-            <div 
-              key={note.id} 
-              className="p-3 rounded shadow-sm relative"
-              style={{ backgroundColor: note.color }}
-            >
-              <button
-                className="absolute top-1 right-1 p-1 rounded-full hover:bg-gray-200/50 text-gray-600"
-                onClick={() => deleteNote(note.id)}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-              </button>
-              <p className="pr-5">{note.text}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* Final Answer Section */}
-      <div className="mt-auto">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmitForEvaluation)} className="space-y-4">
             <FormField
@@ -139,6 +104,42 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
             </Button>
           </form>
         </Form>
+      </div>
+      
+      {/* Sticky Notes Section */}
+      <div className="mb-6">
+        <h3 className="text-md font-semibold mb-2">Your Notes</h3>
+        <Textarea
+          value={newNoteText}
+          onChange={(e) => setNewNoteText(e.target.value)}
+          placeholder="Type your note here..."
+          className="min-h-[80px] mb-3"
+        />
+        <Button 
+          onClick={addStickyNote}
+          className="w-full bg-gray-100 text-black border border-gray-300 hover:bg-gray-200 mb-4"
+        >
+          Add Note
+        </Button>
+        
+        {/* Display Notes */}
+        <div className="space-y-3 max-h-[200px] overflow-y-auto">
+          {notes.map((note) => (
+            <div 
+              key={note.id} 
+              className="p-3 rounded shadow-sm relative"
+              style={{ backgroundColor: note.color }}
+            >
+              <button
+                className="absolute top-1 right-1 p-1 rounded-full hover:bg-gray-200/50 text-gray-600"
+                onClick={() => deleteNote(note.id)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              </button>
+              <p className="pr-5">{note.text}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
