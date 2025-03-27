@@ -1,6 +1,7 @@
 
 import React from "react";
-import { Avatar } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { formatDistanceToNow } from "date-fns";
 
 interface ChatMessageProps {
   id: string;
@@ -9,52 +10,79 @@ interface ChatMessageProps {
   timestamp: Date;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ id, role, content, timestamp }) => {
-  const formatMessage = (content: string) => {
-    return content.split('\n').map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        <br />
-      </React.Fragment>
-    ));
-  };
+// Function to format message with code blocks, links, etc.
+const formatMessage = (content: string) => {
+  // Split content by code blocks
+  const parts = content.split(/```([\s\S]*?)```/);
+  
+  return parts.map((part, index) => {
+    if (index % 2 === 0) {
+      // This is regular text (not inside code blocks)
+      // Replace URLs with clickable links
+      const textWithLinks = part.replace(
+        /(https?:\/\/[^\s]+)/g,
+        '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-500 underline">$1</a>'
+      );
+      
+      // Replace line breaks with <br> tags
+      const textWithBreaks = textWithLinks.replace(/\n/g, '<br>');
+      
+      return (
+        <span key={index} dangerouslySetInnerHTML={{ __html: textWithBreaks }} />
+      );
+    } else {
+      // This is a code block
+      return (
+        <pre key={index} className="bg-gray-800 text-gray-100 p-3 rounded-md my-2 overflow-x-auto text-sm">
+          <code>{part}</code>
+        </pre>
+      );
+    }
+  });
+};
 
+const ChatMessage: React.FC<ChatMessageProps> = ({ id, role, content, timestamp }) => {
+  // Format the relative time (e.g., "5 minutes ago")
+  const timeAgo = formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  
   return (
-    <div
-      className={`flex mb-3 ${
-        role === "user" ? "justify-end" : "justify-start"
+    <div 
+      className={`flex items-start gap-3 mb-4 ${
+        role === "assistant" ? "" : "flex-row-reverse"
       }`}
     >
+      {/* Avatar */}
+      <Avatar className={`h-8 w-8 ${role === "assistant" ? "bg-primary/10" : "bg-black"}`}>
+        {role === "assistant" ? (
+          <>
+            <AvatarFallback>AI</AvatarFallback>
+            <AvatarImage src="/ai-avatar.png" alt="AI Assistant" />
+          </>
+        ) : (
+          <>
+            <AvatarFallback>U</AvatarFallback>
+            <AvatarImage src="/user-avatar.png" alt="User" />
+          </>
+        )}
+      </Avatar>
+      
+      {/* Message content */}
       <div
-        className={`flex max-w-[85%] ${
-          role === "user" ? "flex-row-reverse" : "flex-row"
+        className={`flex-1 px-4 py-2 rounded-lg ${
+          role === "assistant"
+            ? "bg-muted"
+            : "bg-primary text-primary-foreground"
         }`}
       >
-        <Avatar className="h-8 w-8 mx-1 flex-shrink-0">
-          {role === "user" ? (
-            <div className="bg-blue-500 h-full w-full flex items-center justify-center text-white">
-              U
-            </div>
-          ) : (
-            <div className="bg-[rgba(97,228,197,1)] h-full w-full flex items-center justify-center text-black">
-              I
-            </div>
-          )}
-        </Avatar>
+        <div className="prose prose-sm">
+          {formatMessage(content)}
+        </div>
         <div
-          className={`rounded-lg p-2 text-sm ${
-            role === "user"
-              ? "bg-blue-500 text-white"
-              : "bg-white border border-gray-200"
+          className={`text-xs mt-1 ${
+            role === "assistant" ? "text-gray-500" : "text-primary-foreground/80"
           }`}
         >
-          <p className="whitespace-pre-line">{formatMessage(content)}</p>
-          <span className="text-xs opacity-70 mt-1 block">
-            {timestamp.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
+          {timeAgo}
         </div>
       </div>
     </div>

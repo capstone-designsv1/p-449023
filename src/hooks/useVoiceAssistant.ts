@@ -33,6 +33,7 @@ export const useVoiceAssistant = ({
     try {
       if (isListening) return;
       
+      // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
@@ -46,15 +47,19 @@ export const useVoiceAssistant = ({
 
       mediaRecorder.onstop = async () => {
         try {
+          // Create audio blob from recorded chunks
           const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
           const reader = new FileReader();
           
           reader.onload = async function(event) {
             if (!event.target) return;
             
+            // Get base64-encoded audio data
             const base64Audio = (event.target.result as string).split(',')[1];
             
             try {
+              console.log("Sending audio to speech-to-text function...");
+              // Send to speech-to-text edge function
               const response = await supabase.functions.invoke('speech-to-text', {
                 body: { audio: base64Audio }
               });
@@ -64,6 +69,8 @@ export const useVoiceAssistant = ({
               }
               
               if (response.data && response.data.text) {
+                console.log("Transcription received:", response.data.text);
+                // Pass transcribed text to callback
                 onTranscriptReady(response.data.text);
               } else {
                 throw new Error('Failed to transcribe audio');
@@ -85,6 +92,7 @@ export const useVoiceAssistant = ({
 
       mediaRecorder.start();
       setIsListening(true);
+      toast.info("Listening... Speak now", { duration: 3000 });
     } catch (error) {
       console.error('Error accessing microphone:', error);
       toast.error('Could not access your microphone. Please check permissions and try again.');
@@ -96,6 +104,7 @@ export const useVoiceAssistant = ({
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsListening(false);
+      toast.info("Stopped listening", { duration: 1500 });
     }
   }, [isListening]);
 
@@ -105,7 +114,9 @@ export const useVoiceAssistant = ({
     try {
       onSpeechStart();
       setIsSpeaking(true);
+      console.log("Converting text to speech:", text.substring(0, 50) + "...");
       
+      // Call text-to-speech edge function
       const response = await supabase.functions.invoke('text-to-speech', {
         body: { text, voice }
       });
@@ -118,7 +129,9 @@ export const useVoiceAssistant = ({
         throw new Error('No audio content received');
       }
       
-      // Convert base64 to audio
+      console.log("Speech generated successfully, playing audio...");
+      
+      // Convert base64 to audio and play
       const blob = await (await fetch(
         `data:audio/mp3;base64,${response.data.audioContent}`
       )).blob();

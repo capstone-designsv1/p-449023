@@ -32,7 +32,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const lastAssistantMessageRef = useRef<string | null>(null);
   
+  // Handle transcribed speech text
   const handleTranscriptReady = (text: string) => {
+    console.log("Transcript ready:", text);
     setInputText(text);
     // Auto-send the transcribed message
     if (text.trim()) {
@@ -40,15 +42,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
   
+  // Visual indicator that AI is speaking
   const handleSpeechStart = () => {
-    // Visual indicator that AI is speaking
+    console.log("AI speaking started");
     toast.info("AI Assistant is speaking...", { duration: 2000 });
   };
   
+  // Handle speech end event
   const handleSpeechEnd = () => {
-    // Speech ended
+    console.log("AI speaking ended");
   };
   
+  // Initialize voice assistant with handlers
   const { 
     isListening, 
     isSpeaking,
@@ -62,17 +67,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     onSpeechEnd: handleSpeechEnd
   });
 
-  // Track the last assistant message and speak it if in voice mode
+  // Auto-speak AI responses when in voice mode
   useEffect(() => {
     if (isVoiceMode && chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
       if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
+        console.log("Auto-speaking new assistant message");
         lastAssistantMessageRef.current = lastMessage.content;
         speakText(lastMessage.content);
       }
     }
   }, [chatHistory, isVoiceMode, speakText]);
 
+  // Toggle voice mode on/off
   const toggleVoiceMode = () => {
     if (!isVoiceMode) {
       // Ask for microphone permission before enabling
@@ -94,6 +101,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Toggle listening state
   const toggleListening = () => {
     if (isListening) {
       stopListening();
@@ -102,6 +110,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     }
   };
 
+  // Toggle speaking state
   const toggleSpeaking = () => {
     if (isSpeaking) {
       stopSpeaking();
