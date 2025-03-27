@@ -24,6 +24,9 @@ enabled = true
 [realtime]
 enabled = true
 
+[functions.generate-challenge]
+verify_jwt = false
+
 [functions.evaluate-challenge]
 verify_jwt = false
 
