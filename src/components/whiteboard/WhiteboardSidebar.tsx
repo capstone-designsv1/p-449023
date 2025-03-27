@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Avatar } from "@/components/ui/avatar";
 import { Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StickyNoteType {
   id: string;
@@ -40,6 +41,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   const [newNoteText, setNewNoteText] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const form = useForm({
@@ -48,6 +50,13 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
     }
   });
 
+  // Initialize chat with the first AI message when component mounts
+  useEffect(() => {
+    if (messages.length === 0) {
+      initializeChat();
+    }
+  }, []);
+
   // Scroll to bottom of chat when new messages arrive
   useEffect(() => {
     scrollToBottom();
@@ -55,6 +64,34 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const initializeChat = async () => {
+    try {
+      const response = await supabase.functions.invoke('interview-chat', {
+        body: {
+          action: "start",
+          companyName: "Uber", // This should ideally come from the challenge context
+          designLevel: "Senior" // This should ideally be configurable
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      const aiMessage: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        role: "assistant",
+        content: response.data.message,
+        timestamp: new Date()
+      };
+
+      setMessages([aiMessage]);
+    } catch (error) {
+      console.error("Error initializing chat:", error);
+      toast.error("Failed to start the interview. Please try again.");
+    }
   };
 
   const addStickyNote = () => {
@@ -84,8 +121,8 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
     toast.success("Sticky note removed");
   };
 
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || isSending) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -96,17 +133,40 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
 
     setMessages((prev) => [...prev, userMessage]);
     setNewMessage("");
+    setIsSending(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await supabase.functions.invoke('interview-chat', {
+        body: {
+          action: "chat",
+          message: newMessage,
+          history: messages.map(msg => ({
+            role: msg.role,
+            content: msg.content
+          })),
+          companyName: "Uber", // This should ideally come from the challenge context
+          designLevel: "Senior" // This should ideally be configurable
+        }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
       const aiMessage: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: "assistant",
-        content: "I'm your interview partner. Let's discuss your approach to this design challenge. What's your initial thinking?",
+        content: response.data.message,
         timestamp: new Date()
       };
+
       setMessages((prev) => [...prev, aiMessage]);
-    }, 1000);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to get a response. Please try again.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const formatMessage = (content: string) => {
@@ -118,8 +178,8 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
     ));
   };
 
-  const handleSubmitEvaluation = () => {
-    if (messages.length === 0) {
+  const handleSubmitEvaluation = async () => {
+    if (messages.length <= 1) {
       toast.error("Please have a conversation before submitting for evaluation");
       return;
     }
@@ -143,7 +203,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         <div className="flex-1 overflow-y-auto bg-gray-50 rounded-md p-3 mb-3 min-h-[200px] max-h-[300px]">
           {messages.length === 0 ? (
             <div className="text-gray-400 text-center py-4">
-              Start chatting with your interview partner about the challenge
+              Starting interview conversation...
             </div>
           ) : (
             messages.map((message) => (
@@ -165,7 +225,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
                       </div>
                     ) : (
                       <div className="bg-[rgba(97,228,197,1)] h-full w-full flex items-center justify-center text-black">
-                        A
+                        I
                       </div>
                     )}
                   </Avatar>
@@ -198,6 +258,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Type your message..."
             className="min-h-[60px] resize-none flex-1"
+            disabled={isSending}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -208,6 +269,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
           <Button
             onClick={handleSendMessage}
             size="icon"
+            disabled={isSending}
             className="self-end bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
           >
             <Send className="h-4 w-4" />
@@ -218,7 +280,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         <Button 
           onClick={handleSubmitEvaluation}
           className="w-full mt-3 bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
-          disabled={isEvaluating || messages.length === 0}
+          disabled={isEvaluating || messages.length <= 1}
         >
           {isEvaluating ? "Evaluating..." : "Submit for Evaluation"}
         </Button>

@@ -87,6 +87,8 @@ serve(async (req) => {
       3. Clarity of communication
       4. Depth of analysis
       5. Solution quality
+      6. Interview performance and communication skills
+      7. Ability to respond to questions and challenges
       
       Generate a score from 0-100 and provide detailed constructive feedback.
       Format your response as:
