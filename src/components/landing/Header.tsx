@@ -6,7 +6,9 @@ const Header: React.FC = () => {
   return (
     <header className="w-full max-w-[1482px]">
       <nav className="flex w-full items-stretch gap-5 text-xl flex-wrap justify-between max-md:max-w-full">
-        <div className="flex items-stretch gap-[25px] text-black font-normal text-right leading-9 my-auto">
+        <div className="flex items-stretch gap-[25px] text-black font-normal text-right leading-9 my-auto" style={{
+          fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif"
+        }}>
           <a href="#" className="grow hover:text-gray-700 transition-colors">
             Home
           </a>
@@ -20,7 +22,9 @@ const Header: React.FC = () => {
             Contact us
           </a>
         </div>
-        <div className="flex items-stretch gap-[31px] font-bold">
+        <div className="flex items-stretch gap-[31px] font-bold" style={{
+          fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif"
+        }}>
           <a
             href="#"
             className="text-[rgba(25,26,35,1)] my-auto hover:underline"
