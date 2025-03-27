@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -23,6 +22,8 @@ const industries = [
   "Food & Beverage",
   "Transportation"
 ];
+
+const designerLevels = ["Junior", "Senior", "Lead"];
 
 const Challenges: React.FC = () => {
   const navigate = useNavigate();
@@ -74,18 +75,21 @@ const Challenges: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <Label htmlFor="designer-level" className="mb-2 block text-gray-700">Designer Level</Label>
-            <Tabs 
-              defaultValue={selectedLevel} 
-              value={selectedLevel}
+            <Select 
+              value={selectedLevel} 
               onValueChange={(value) => setSelectedLevel(value as "Junior" | "Senior" | "Lead")}
-              className="mb-4"
             >
-              <TabsList className="bg-gray-100 w-full">
-                <TabsTrigger value="Junior" className="text-lg flex-1">Junior</TabsTrigger>
-                <TabsTrigger value="Senior" className="text-lg flex-1">Senior</TabsTrigger>
-                <TabsTrigger value="Lead" className="text-lg flex-1">Lead</TabsTrigger>
-              </TabsList>
-            </Tabs>
+              <SelectTrigger id="designer-level" className="w-full">
+                <SelectValue placeholder="Select designer level" />
+              </SelectTrigger>
+              <SelectContent>
+                {designerLevels.map((level) => (
+                  <SelectItem key={level} value={level}>
+                    {level}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div>
@@ -196,12 +200,6 @@ const Challenges: React.FC = () => {
               ) : (
                 <div className="col-span-3 text-center py-12 bg-gray-50 rounded-lg">
                   <p className="text-gray-600 mb-4">No challenges generated yet</p>
-                  <Button 
-                    onClick={handleGenerateChallenges}
-                    className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
-                  >
-                    Generate Challenges
-                  </Button>
                 </div>
               )}
             </div>
