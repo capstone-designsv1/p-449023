@@ -41,7 +41,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         <p className="text-gray-700">{description}</p>
       </div>
       
-      {/* Final Answer Section (Moved up) */}
+      {/* Final Answer Section */}
       <div className="mb-4">
         <h2 className="text-lg font-semibold mb-2">Final Answer</h2>
         <ChatInterface

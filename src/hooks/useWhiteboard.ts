@@ -1,5 +1,5 @@
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -100,6 +100,7 @@ export const useWhiteboard = () => {
 
   const handleCloseResults = () => {
     setShowResults(false);
+    navigate("/challenges");
   };
 
   const initializeChallenge = () => {

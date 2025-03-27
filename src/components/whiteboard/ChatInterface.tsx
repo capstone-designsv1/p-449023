@@ -40,14 +40,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Initialize chat with the first AI message when component mounts
   useEffect(() => {
-    if (chatHistory.length === 0) {
+    if (chatHistory.length === 0 && activeChallenge) {
       initializeChat();
     }
-  }, []);
+  }, [activeChallenge, chatHistory.length]);
 
   const initializeChat = async () => {
+    if (!activeChallenge) return;
+    
     try {
-      const companyName = activeChallenge?.company || "Uber";
+      const companyName = activeChallenge.company;
+      console.log("Initializing chat with company:", companyName);
       
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
@@ -76,7 +79,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || isSending) return;
+    if (!newMessage.trim() || isSending || !activeChallenge) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -90,7 +93,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     setIsSending(true);
 
     try {
-      const companyName = activeChallenge?.company || "Uber";
+      const companyName = activeChallenge.company;
+      console.log("Sending message with company:", companyName);
       
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
@@ -148,7 +152,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           chatHistory.map((message) => (
             <ChatMessage 
               key={message.id}
-              id={message.id}
               role={message.role}
               content={message.content}
               timestamp={message.timestamp}
