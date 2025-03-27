@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
 import StickyNote from "@/components/whiteboard/StickyNote";
 import Toolbar from "@/components/whiteboard/Toolbar";
+import EvaluationResults from "@/components/whiteboard/EvaluationResults";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface StickyNoteType {
@@ -107,6 +109,13 @@ const Whiteboard: React.FC = () => {
   const [newNoteText, setNewNoteText] = useState("");
   const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "select" | "text">("pen");
   const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // Evaluation state
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [evaluationScore, setEvaluationScore] = useState<number | null>(null);
+  const [evaluationFeedback, setEvaluationFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (challengeId && challengeDetails[challengeId]) {
@@ -160,6 +169,55 @@ const Whiteboard: React.FC = () => {
     navigate("/challenges");
   };
 
+  const getCanvasData = (): string => {
+    if (!canvasRef.current) return "";
+    return canvasRef.current.toDataURL();
+  };
+
+  const handleSubmitForEvaluation = async () => {
+    if (!challengeId) return;
+    
+    setIsEvaluating(true);
+    setShowResults(true);
+    
+    try {
+      const canvasData = getCanvasData();
+      
+      const response = await supabase.functions.invoke('evaluate-challenge', {
+        body: {
+          submissionData: {
+            challengeId,
+            canvasData,
+            notes
+          }
+        }
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      const { score, feedback } = response.data;
+      setEvaluationScore(score);
+      setEvaluationFeedback(feedback);
+      
+      toast.success("Challenge evaluation completed!");
+    } catch (error) {
+      console.error("Evaluation error:", error);
+      toast.error("Failed to evaluate challenge. Please try again.");
+    } finally {
+      setIsEvaluating(false);
+    }
+  };
+
+  const handleCanvasRef = (ref: HTMLCanvasElement | null) => {
+    canvasRef.current = ref;
+  };
+
+  const handleCloseResults = () => {
+    setShowResults(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
       {/* Header */}
@@ -171,12 +229,21 @@ const Whiteboard: React.FC = () => {
             </h1>
             <p className="text-gray-600">{activeChallenge?.company}</p>
           </div>
-          <Button 
-            onClick={handleBackToList}
-            className="bg-gray-100 text-black border border-gray-300 hover:bg-gray-200"
-          >
-            Back to Challenges
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              onClick={handleSubmitForEvaluation}
+              className="bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
+              disabled={isEvaluating}
+            >
+              {isEvaluating ? "Evaluating..." : "Submit for Evaluation"}
+            </Button>
+            <Button 
+              onClick={handleBackToList}
+              className="bg-gray-100 text-black border border-gray-300 hover:bg-gray-200"
+            >
+              Back to Challenges
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -217,7 +284,7 @@ const Whiteboard: React.FC = () => {
         <div className="flex-1 relative overflow-hidden" ref={containerRef}>
           <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
           
-          <WhiteboardCanvas activeTool={activeTool} />
+          <WhiteboardCanvas activeTool={activeTool} onCanvasRef={handleCanvasRef} />
           
           {/* Sticky notes layer */}
           {notes.map((note) => (
@@ -234,6 +301,15 @@ const Whiteboard: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Evaluation Results Dialog */}
+      <EvaluationResults
+        isOpen={showResults}
+        onClose={handleCloseResults}
+        score={evaluationScore}
+        feedback={evaluationFeedback}
+        isLoading={isEvaluating}
+      />
     </div>
   );
 };

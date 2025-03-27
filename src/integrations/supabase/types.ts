@@ -9,7 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      challenge_submissions: {
+        Row: {
+          canvas_data: string | null
+          challenge_id: string
+          evaluation_feedback: string | null
+          evaluation_score: number | null
+          evaluation_status: string | null
+          id: string
+          notes: Json | null
+          submitted_at: string
+          user_id: string | null
+        }
+        Insert: {
+          canvas_data?: string | null
+          challenge_id: string
+          evaluation_feedback?: string | null
+          evaluation_score?: number | null
+          evaluation_status?: string | null
+          id?: string
+          notes?: Json | null
+          submitted_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          canvas_data?: string | null
+          challenge_id?: string
+          evaluation_feedback?: string | null
+          evaluation_score?: number | null
+          evaluation_status?: string | null
+          id?: string
+          notes?: Json | null
+          submitted_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

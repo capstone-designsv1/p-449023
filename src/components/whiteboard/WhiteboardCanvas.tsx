@@ -4,9 +4,10 @@ import { toast } from "sonner";
 
 interface WhiteboardCanvasProps {
   activeTool: "pen" | "eraser" | "select" | "text";
+  onCanvasRef?: (ref: HTMLCanvasElement | null) => void;
 }
 
-const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool }) => {
+const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanvasRef }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
@@ -44,10 +45,18 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool }) => {
     
     setContext(ctx);
     
+    // Expose canvas ref to parent component if callback provided
+    if (onCanvasRef) {
+      onCanvasRef(canvas);
+    }
+    
     return () => {
       window.removeEventListener("resize", resizeCanvas);
+      if (onCanvasRef) {
+        onCanvasRef(null);
+      }
     };
-  }, []);
+  }, [onCanvasRef]);
 
   // Handle tool changes
   useEffect(() => {
