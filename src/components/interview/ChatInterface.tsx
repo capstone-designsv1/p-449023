@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessage {
@@ -30,7 +29,31 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   const [isInitializing, setIsInitializing] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const lastAssistantMessageRef = useRef<string | null>(null);
   const MAX_RETRIES = 2;
+
+  // Initialize audio player
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      audioPlayerRef.current = new Audio();
+      audioPlayerRef.current.addEventListener('ended', () => {
+        setIsSpeaking(false);
+      });
+    }
+    
+    return () => {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.src = '';
+      }
+    };
+  }, []);
 
   // Initialize chat with first AI message
   useEffect(() => {
@@ -40,7 +63,16 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
-  }, [chatHistory]);
+    
+    // Speak the last assistant message if voice mode is enabled
+    if (isVoiceMode && chatHistory.length > 0) {
+      const lastMessage = chatHistory[chatHistory.length - 1];
+      if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
+        lastAssistantMessageRef.current = lastMessage.content;
+        speakText(lastMessage.content);
+      }
+    }
+  }, [chatHistory, isVoiceMode]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -222,6 +254,185 @@ This is a simplified evaluation as we're currently experiencing technical diffic
     }
   };
 
+  // Voice assistant functions
+  const toggleVoiceMode = () => {
+    if (!isVoiceMode) {
+      // Ask for microphone permission before enabling
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          setIsVoiceMode(true);
+          toast.success("Voice mode enabled", { duration: 2000 });
+        })
+        .catch((err) => {
+          console.error("Microphone permission denied:", err);
+          toast.error("Microphone access is required for voice mode");
+        });
+    } else {
+      // Disable voice mode
+      if (isListening) stopListening();
+      if (isSpeaking) stopSpeaking();
+      setIsVoiceMode(false);
+      toast.success("Voice mode disabled", { duration: 2000 });
+    }
+  };
+
+  const startListening = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        try {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          
+          reader.onload = async function(event) {
+            if (!event.target) return;
+            
+            const base64Audio = (event.target.result as string).split(',')[1];
+            
+            try {
+              const response = await supabase.functions.invoke('speech-to-text', {
+                body: { audio: base64Audio }
+              });
+              
+              if (response.error) {
+                throw new Error(response.error.message);
+              }
+              
+              if (response.data && response.data.text) {
+                setNewMessage(response.data.text);
+                // Auto-send the transcribed message
+                if (response.data.text.trim()) {
+                  const userMessage: ChatMessage = {
+                    id: `user-${Date.now()}`,
+                    role: "user",
+                    content: response.data.text,
+                    timestamp: new Date()
+                  };
+                  
+                  setChatHistory(prev => [...prev, userMessage]);
+                  setNewMessage("");
+                  setIsSending(true);
+                  
+                  try {
+                    await sendMessageToAI(response.data.text);
+                  } catch (error) {
+                    console.error("Error sending message:", error);
+                    handleRetryOrFallback();
+                  } finally {
+                    setIsSending(false);
+                  }
+                }
+              } else {
+                throw new Error('Failed to transcribe audio');
+              }
+            } catch (error) {
+              console.error('Transcription error:', error);
+              toast.error('Failed to transcribe your speech. Please try again.');
+              setIsListening(false);
+            }
+          };
+          
+          reader.readAsDataURL(audioBlob);
+        } catch (error) {
+          console.error('Error processing audio:', error);
+          toast.error('Error processing audio. Please try again.');
+          setIsListening(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsListening(true);
+      toast.info("Listening... Speak now", { duration: 3000 });
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      toast.error('Could not access your microphone. Please check permissions and try again.');
+    }
+  };
+
+  const stopListening = () => {
+    if (mediaRecorderRef.current && isListening) {
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+      setIsListening(false);
+      toast.info("Stopped listening", { duration: 1500 });
+    }
+  };
+
+  const speakText = async (text: string, voice = 'alloy') => {
+    if (!text || isSpeaking) return;
+    
+    try {
+      setIsSpeaking(true);
+      toast.info("AI is speaking...", { duration: 2000 });
+      
+      const response = await supabase.functions.invoke('text-to-speech', {
+        body: { text, voice }
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+      
+      if (!response.data || !response.data.audioContent) {
+        throw new Error('No audio content received');
+      }
+      
+      // Convert base64 to audio
+      const blob = await (await fetch(
+        `data:audio/mp3;base64,${response.data.audioContent}`
+      )).blob();
+      
+      const url = URL.createObjectURL(blob);
+      
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.src = url;
+        await audioPlayerRef.current.play();
+      }
+    } catch (error) {
+      console.error('Error speaking text:', error);
+      toast.error('Failed to convert text to speech. Please try again.');
+      setIsSpeaking(false);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      setIsSpeaking(false);
+    }
+  };
+
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  const toggleSpeaking = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+    } else if (chatHistory.length > 0) {
+      // Find the last assistant message
+      const lastAssistantMessage = [...chatHistory].reverse().find(msg => msg.role === 'assistant');
+      if (lastAssistantMessage) {
+        speakText(lastAssistantMessage.content);
+      }
+    }
+  };
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 mb-4">
@@ -265,7 +476,60 @@ This is a simplified evaluation as we're currently experiencing technical diffic
 
       <div className="border-t p-4">
         <div className="flex flex-col space-y-4">
-          <div className="flex gap-2">
+          {isVoiceMode && (
+            <div className="flex justify-center space-x-3 mb-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className={`${isListening ? 'bg-red-100 text-red-700 border-red-300' : ''}`}
+                onClick={toggleListening}
+                disabled={isSending || isInitializing}
+              >
+                {isListening ? (
+                  <>
+                    <MicOff className="h-4 w-4 mr-1" /> Stop Listening
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-4 w-4 mr-1" /> Start Listening
+                  </>
+                )}
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleSpeaking}
+                disabled={chatHistory.length === 0 || isInitializing}
+                className={isSpeaking ? 'bg-blue-100 text-blue-700 border-blue-300' : ''}
+              >
+                {isSpeaking ? (
+                  <>
+                    <VolumeX className="h-4 w-4 mr-1" /> Stop Speaking
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="h-4 w-4 mr-1" /> Speak Last Message
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline" 
+              size="icon"
+              className={`${isVoiceMode ? 'bg-green-100' : ''}`}
+              onClick={toggleVoiceMode}
+              title={isVoiceMode ? "Disable voice mode" : "Enable voice mode"}
+            >
+              {isVoiceMode 
+                ? <Volume2 className="h-4 w-4 text-green-700" /> 
+                : <VolumeX className="h-4 w-4" />
+              }
+            </Button>
+          
             <Textarea
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
