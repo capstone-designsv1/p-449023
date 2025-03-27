@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ChallengeDetails } from "@/context/ChallengeContext";
@@ -15,17 +15,16 @@ export const useChallengeGenerator = ({
   industry, 
   forceRefresh = false 
 }: UseChallengeGeneratorProps) => {
-  const [challenge, setChallenge] = useState<ChallengeDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateChallenge = async () => {
+  const generateChallenge = async (): Promise<ChallengeDetails | null> => {
     setIsLoading(true);
     setError(null);
 
     try {
       // Check if we have a cached challenge in localStorage
-      const cacheKey = `challenge_${designLevel}_${industry}`;
+      const cacheKey = `challenge_${designLevel}_${industry}_${Date.now()}`;
       const cachedChallenge = localStorage.getItem(cacheKey);
       
       // Use cached challenge if available and not forcing refresh
@@ -38,8 +37,6 @@ export const useChallengeGenerator = ({
         const cacheAgeHours = cacheAgeMs / (1000 * 60 * 60);
         
         if (cacheAgeHours < 1) {
-          setChallenge(parsedChallenge.challenge);
-          setIsLoading(false);
           console.log("Using cached challenge");
           return parsedChallenge.challenge;
         }
@@ -66,7 +63,6 @@ export const useChallengeGenerator = ({
         cachedAt: new Date().toISOString()
       }));
 
-      setChallenge(generatedChallenge);
       return generatedChallenge;
     } catch (err) {
       console.error("Error generating challenge:", err);
@@ -80,7 +76,6 @@ export const useChallengeGenerator = ({
   };
 
   return {
-    challenge,
     isLoading,
     error,
     generateChallenge

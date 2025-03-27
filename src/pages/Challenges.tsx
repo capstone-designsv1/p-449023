@@ -28,10 +28,9 @@ const Challenges: React.FC = () => {
   const navigate = useNavigate();
   const [selectedLevel, setSelectedLevel] = useState<"Junior" | "Senior" | "Lead">("Junior");
   const [selectedIndustry, setSelectedIndustry] = useState<string>("E-commerce");
-  const [currentChallenge, setCurrentChallenge] = useState<ChallengeDetails | null>(null);
+  const [challenges, setChallenges] = useState<ChallengeDetails[]>([]);
   
   const { 
-    challenge, 
     isLoading, 
     error, 
     generateChallenge 
@@ -40,21 +39,22 @@ const Challenges: React.FC = () => {
     industry: selectedIndustry
   });
   
-  useEffect(() => {
-    // Generate a challenge when the component mounts or when selection changes
-    generateChallenge().then(result => {
-      if (result) {
-        setCurrentChallenge(result);
-      }
-    });
-  }, [selectedLevel, selectedIndustry]);
-  
-  const handleRefreshChallenge = () => {
-    generateChallenge().then(result => {
-      if (result) {
-        setCurrentChallenge(result);
-      }
-    });
+  const handleGenerateChallenges = async () => {
+    try {
+      setChallenges([]);
+      // Generate 3 challenges at once
+      const results = await Promise.all([
+        generateChallenge(),
+        generateChallenge(),
+        generateChallenge()
+      ]);
+      
+      // Filter out any null results
+      const validResults = results.filter(Boolean) as ChallengeDetails[];
+      setChallenges(validResults);
+    } catch (error) {
+      console.error("Error generating challenges:", error);
+    }
   };
   
   const handleStartChallenge = (challenge: ChallengeDetails) => {
@@ -107,34 +107,30 @@ const Challenges: React.FC = () => {
             </Select>
           </div>
         </div>
+        
+        <div className="mt-6 flex justify-center">
+          <Button 
+            onClick={handleGenerateChallenges}
+            disabled={isLoading}
+            size="lg"
+            className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
+          >
+            {isLoading ? (
+              <>
+                <RefreshCw className="h-5 w-5 animate-spin" />
+                Generating Challenges...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-5 w-5" />
+                Generate Challenges
+              </>
+            )}
+          </Button>
+        </div>
       </div>
       
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Your Challenge</h2>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefreshChallenge}
-          disabled={isLoading}
-          className="flex items-center gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Generate New
-        </Button>
-      </div>
-      
-      {isLoading ? (
-        <Card className="overflow-hidden border border-gray-200">
-          <CardHeader className="pb-4">
-            <Skeleton className="h-7 w-2/3 mb-2" />
-            <Skeleton className="h-5 w-1/2" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-20 w-full mb-4" />
-            <Skeleton className="h-10 w-1/3" />
-          </CardContent>
-        </Card>
-      ) : error ? (
+      {error ? (
         <Card className="overflow-hidden border border-gray-200 bg-red-50">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl font-bold">Error Generating Challenge</CardTitle>
@@ -142,49 +138,76 @@ const Challenges: React.FC = () => {
           <CardContent>
             <p className="mb-4 text-red-600">{error}</p>
             <Button 
-              onClick={handleRefreshChallenge}
+              onClick={handleGenerateChallenges}
               className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
             >
               Try Again
             </Button>
           </CardContent>
         </Card>
-      ) : currentChallenge ? (
-        <Card className="overflow-hidden border border-gray-200">
-          <CardHeader className="pb-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="text-xl font-bold">{currentChallenge.title}</CardTitle>
-                <CardDescription className="text-base mt-1">
-                  By {currentChallenge.company} · {selectedLevel} · {selectedIndustry}
-                </CardDescription>
-              </div>
-              <div className="bg-[rgba(233,231,252,1)] px-3 py-1 rounded-full text-sm border border-[rgba(25,71,229,1)]">
-                {selectedLevel}
-              </div>
+      ) : (
+        <>
+          <h2 className="text-2xl font-semibold mb-6">Available Challenges</h2>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="overflow-hidden border border-gray-200">
+                  <CardHeader className="pb-4">
+                    <Skeleton className="h-7 w-2/3 mb-2" />
+                    <Skeleton className="h-5 w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <Skeleton className="h-20 w-full mb-4" />
+                    <Skeleton className="h-10 w-1/3" />
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">{currentChallenge.description}</p>
-            
-            <div className="mb-6">
-              <h3 className="font-semibold mb-2">Instructions:</h3>
-              <ul className="list-disc list-inside space-y-1 pl-2">
-                {currentChallenge.instructions.map((instruction, index) => (
-                  <li key={index} className="text-gray-700">{instruction}</li>
-                ))}
-              </ul>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {challenges.length > 0 ? (
+                challenges.map((challenge) => (
+                  <Card key={challenge.id} className="overflow-hidden border border-gray-200 h-full flex flex-col">
+                    <CardHeader className="pb-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-xl font-bold">{challenge.title}</CardTitle>
+                          <CardDescription className="text-base mt-1">
+                            By {challenge.company} · {selectedLevel} · {selectedIndustry}
+                          </CardDescription>
+                        </div>
+                        <div className="bg-[rgba(233,231,252,1)] px-3 py-1 rounded-full text-sm border border-[rgba(25,71,229,1)]">
+                          {selectedLevel}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col">
+                      <p className="mb-4 flex-1">{challenge.description}</p>
+                      
+                      <Button 
+                        onClick={() => handleStartChallenge(challenge)}
+                        className="mt-auto bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-6 py-3 rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
+                      >
+                        Start Challenge
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-3 text-center py-12 bg-gray-50 rounded-lg">
+                  <p className="text-gray-600 mb-4">No challenges generated yet</p>
+                  <Button 
+                    onClick={handleGenerateChallenges}
+                    className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
+                  >
+                    Generate Challenges
+                  </Button>
+                </div>
+              )}
             </div>
-            
-            <Button 
-              onClick={() => handleStartChallenge(currentChallenge)}
-              className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
-            >
-              Start Challenge
-            </Button>
-          </CardContent>
-        </Card>
-      ) : null}
+          )}
+        </>
+      )}
     </div>
   );
 };
