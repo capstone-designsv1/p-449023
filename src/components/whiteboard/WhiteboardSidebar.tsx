@@ -41,13 +41,16 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         <p className="text-gray-700">{description}</p>
       </div>
       
-      {/* Interview Partner Section - Using ChatInterface component */}
-      <ChatInterface
-        onSubmitForEvaluation={onSubmitForEvaluation}
-        isEvaluating={isEvaluating}
-      />
+      {/* Final Answer Section (Moved up) */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-2">Final Answer</h2>
+        <ChatInterface
+          onSubmitForEvaluation={onSubmitForEvaluation}
+          isEvaluating={isEvaluating}
+        />
+      </div>
       
-      {/* Sticky Notes Section - Using StickyNoteInput component */}
+      {/* Sticky Notes Section */}
       <StickyNoteInput
         notes={notes}
         setNotes={setNotes}

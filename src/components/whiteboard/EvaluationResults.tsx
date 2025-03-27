@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Award, ChevronRight, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useChallengeContext } from "@/context/ChallengeContext";
+import { useNavigate } from "react-router-dom";
 
 interface EvaluationResultsProps {
   isOpen: boolean;
@@ -22,10 +23,16 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
   isLoading,
 }) => {
   const { evaluationStrengths, evaluationImprovements, evaluationActionable } = useChallengeContext();
+  const navigate = useNavigate();
+
+  const handleClose = () => {
+    onClose();
+    navigate("/challenges");
+  };
 
   if (isLoading) {
     return (
-      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Evaluating Your Work...</DialogTitle>
@@ -42,7 +49,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl flex items-center">
@@ -134,7 +141,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
 
         <div className="flex justify-end mt-4">
           <DialogClose asChild>
-            <Button onClick={onClose}>Close</Button>
+            <Button onClick={handleClose}>Close</Button>
           </DialogClose>
         </div>
       </DialogContent>

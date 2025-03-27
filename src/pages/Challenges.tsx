@@ -69,52 +69,19 @@ const sampleChallenges: Challenge[] = [
     description: "Design a system that maintains consistent user experience across mobile, desktop, and VR.",
     duration: "90 min",
     type: "whiteboard"
-  },
-  // Interview challenges
-  {
-    id: "uber",
-    title: "AI Interview: Product Design at Uber",
-    company: "Uber",
-    level: "Junior",
-    description: "Practice a realistic product design interview with an AI interviewer from Uber.",
-    duration: "30 min",
-    type: "interview"
-  },
-  {
-    id: "airbnb",
-    title: "AI Interview: Product Design at Airbnb",
-    company: "Airbnb",
-    level: "Senior",
-    description: "Get interviewed by an AI simulating an Airbnb product design interviewer.",
-    duration: "30 min",
-    type: "interview"
-  },
-  {
-    id: "meta",
-    title: "AI Interview: Product Design at Meta",
-    company: "Meta",
-    level: "Lead",
-    description: "Practice your interview skills with an AI that simulates a Meta design interviewer.",
-    duration: "30 min",
-    type: "interview"
   }
 ];
 
 const Challenges: React.FC = () => {
   const navigate = useNavigate();
   const [selectedLevel, setSelectedLevel] = useState<"Junior" | "Senior" | "Lead">("Junior");
-  const [challengeType, setChallengeType] = useState<"whiteboard" | "interview">("whiteboard");
   
   const filteredChallenges = sampleChallenges.filter(
-    challenge => challenge.level === selectedLevel && challenge.type === challengeType
+    challenge => challenge.level === selectedLevel && challenge.type === "whiteboard"
   );
   
   const handleStartChallenge = (challenge: Challenge) => {
-    if (challenge.type === "whiteboard") {
-      navigate(`/whiteboard/${challenge.id}`);
-    } else {
-      navigate(`/interview/${challenge.id}`);
-    }
+    navigate(`/whiteboard/${challenge.id}`);
   };
   
   return (
@@ -123,15 +90,6 @@ const Challenges: React.FC = () => {
       <p className="text-xl mb-8 text-[rgba(28,14,13,1)]">
         Practice real-world product design challenges from top companies.
       </p>
-      
-      <div className="mb-6">
-        <Tabs defaultValue="whiteboard" onValueChange={(value) => setChallengeType(value as "whiteboard" | "interview")}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="whiteboard" className="text-lg px-6">Whiteboard Challenges</TabsTrigger>
-            <TabsTrigger value="interview" className="text-lg px-6">AI Interviews</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
       
       <Tabs defaultValue="Junior" onValueChange={(value) => setSelectedLevel(value as "Junior" | "Senior" | "Lead")}>
         <TabsList className="mb-8 bg-gray-100">

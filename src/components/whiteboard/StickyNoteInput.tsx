@@ -57,7 +57,7 @@ const StickyNoteInput: React.FC<StickyNoteInputProps> = ({ notes, setNotes }) =>
       />
       <Button 
         onClick={addStickyNote}
-        className="w-full bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)] mb-4"
+        className="w-full bg-gray-100 text-black border border-gray-300 hover:bg-gray-200"
       >
         Add Note
       </Button>
