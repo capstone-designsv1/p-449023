@@ -1,5 +1,8 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+
 const Hero: React.FC = () => {
   return <section className="mr-[34px] mt-[122px] max-md:max-w-full max-md:mr-2.5 max-md:mt-10" style={{
     fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif"
@@ -16,9 +19,11 @@ const Hero: React.FC = () => {
               Practice design whiteboarding with an AI that listens, responds,
               and gives instant feedback—just like a real interviewer.
             </p>
-            <Button className="bg-[rgba(97,228,197,1)] border gap-2.5 text-lg text-black mt-12 px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors max-md:mt-10 max-md:px-5">
-              Start Practicing for Free
-            </Button>
+            <Link to="/challenges">
+              <Button className="bg-[rgba(97,228,197,1)] border gap-2.5 text-lg text-black mt-12 px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors max-md:mt-10 max-md:px-5">
+                Start Practicing for Free
+              </Button>
+            </Link>
           </div>
         </div>
 
