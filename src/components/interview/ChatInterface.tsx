@@ -18,14 +18,12 @@ interface ChatInterfaceProps {
   companyName: string;
   designLevel: "Junior" | "Senior" | "Lead";
   onSessionEnd?: (feedback: string) => void;
-  industry?: string;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   companyName,
   designLevel,
   onSessionEnd,
-  industry,
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +38,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   useEffect(() => {
     // Start the interview with an initial message from the AI
     startInterview();
-  }, [companyName, designLevel, industry]);
+  }, [companyName, designLevel]);
 
   useEffect(() => {
     scrollToBottom();
@@ -62,7 +60,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           action: "start",
           companyName,
           designLevel,
-          industry,
         }),
       });
 
@@ -117,7 +114,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })),
           companyName,
           designLevel,
-          industry,
         }),
       });
 
@@ -167,7 +163,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           })),
           companyName,
           designLevel,
-          industry,
         }),
       });
 

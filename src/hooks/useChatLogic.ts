@@ -29,16 +29,13 @@ export const useChatLogic = (
     
     try {
       const companyName = activeChallenge.company;
-      const industry = activeChallenge.industry || getIndustryFromCompany(companyName);
-      
-      console.log("Initializing chat with company:", companyName, "industry:", industry);
+      console.log("Initializing chat with company:", companyName);
       
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
           action: "start",
           companyName: companyName,
-          designLevel: activeChallenge.designLevel || "Senior",
-          industry: industry
+          designLevel: "Senior" // This should ideally be configurable
         }
       });
 
@@ -75,9 +72,7 @@ export const useChatLogic = (
 
     try {
       const companyName = activeChallenge.company;
-      const industry = activeChallenge.industry || getIndustryFromCompany(companyName);
-      
-      console.log("Sending message with company:", companyName, "industry:", industry);
+      console.log("Sending message with company:", companyName);
       
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
@@ -88,8 +83,7 @@ export const useChatLogic = (
             content: msg.content
           })),
           companyName: companyName,
-          designLevel: activeChallenge.designLevel || "Senior",
-          industry: industry
+          designLevel: "Senior" // This should ideally be configurable
         }
       });
 
@@ -111,18 +105,6 @@ export const useChatLogic = (
     } finally {
       setIsSending(false);
     }
-  };
-
-  // Helper function to determine industry from company if not explicitly provided
-  const getIndustryFromCompany = (companyName: string): string => {
-    const companyIndustryMap: Record<string, string> = {
-      'Uber': 'transportation and delivery',
-      'Airbnb': 'hospitality and accommodation',
-      'Meta': 'social media and technology',
-      // Add more mappings as needed
-    };
-    
-    return companyIndustryMap[companyName] || 'technology';
   };
 
   return {
