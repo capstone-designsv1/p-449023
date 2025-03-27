@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, ReactNode } from "react";
 
 interface StickyNoteType {
@@ -21,6 +20,7 @@ export interface ChallengeDetails {
   company: string;
   description: string;
   instructions: string[];
+  industry?: string; // Added industry field
 }
 
 interface ChallengeContextType {

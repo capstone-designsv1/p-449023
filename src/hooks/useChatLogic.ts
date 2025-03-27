@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ChallengeDetails } from "@/context/ChallengeContext";
 
 interface ChatMessage {
   id: string;
@@ -11,7 +11,7 @@ interface ChatMessage {
 }
 
 export const useChatLogic = (
-  activeChallenge: any,
+  activeChallenge: ChallengeDetails | null,
   chatHistory: ChatMessage[],
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>
 ) => {
@@ -29,13 +29,16 @@ export const useChatLogic = (
     
     try {
       const companyName = activeChallenge.company;
-      console.log("Initializing chat with company:", companyName);
+      const industry = getChallengeIndustry(activeChallenge);
+      
+      console.log("Initializing chat with company:", companyName, "industry:", industry);
       
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
           action: "start",
           companyName: companyName,
-          designLevel: "Senior" // This should ideally be configurable
+          designLevel: "Senior", // This should ideally be configurable
+          industry: industry
         }
       });
 
@@ -72,7 +75,9 @@ export const useChatLogic = (
 
     try {
       const companyName = activeChallenge.company;
-      console.log("Sending message with company:", companyName);
+      const industry = getChallengeIndustry(activeChallenge);
+      
+      console.log("Sending message with company:", companyName, "industry:", industry);
       
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
@@ -83,7 +88,8 @@ export const useChatLogic = (
             content: msg.content
           })),
           companyName: companyName,
-          designLevel: "Senior" // This should ideally be configurable
+          designLevel: "Senior", // This should ideally be configurable
+          industry: industry
         }
       });
 
@@ -105,6 +111,33 @@ export const useChatLogic = (
     } finally {
       setIsSending(false);
     }
+  };
+
+  // Helper function to extract industry from challenge details
+  const getChallengeIndustry = (challenge: ChallengeDetails): string => {
+    // If the challenge has an explicit industry field, use it
+    if (challenge.industry) {
+      return challenge.industry;
+    }
+    
+    // Otherwise, try to infer from the ID or company name
+    const id = challenge.id.toLowerCase();
+    if (id.includes('ecommerce') || id.includes('e-commerce')) {
+      return 'E-commerce';
+    } else if (id.includes('fintech') || id.includes('finance')) {
+      return 'Fintech';
+    } else if (id.includes('health')) {
+      return 'Healthcare';
+    } else if (id.includes('social') || id.includes('media')) {
+      return 'Social Media';
+    } else if (id.includes('travel')) {
+      return 'Travel';
+    } else if (id.includes('edu')) {
+      return 'Education';
+    }
+    
+    // Default fallback
+    return 'Technology';
   };
 
   return {
