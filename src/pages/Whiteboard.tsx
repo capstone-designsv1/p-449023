@@ -244,13 +244,6 @@ const Whiteboard: React.FC = () => {
           </div>
           <div className="flex gap-3">
             <Button 
-              onClick={form.handleSubmit(handleSubmitForEvaluation)}
-              className="bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
-              disabled={isEvaluating}
-            >
-              {isEvaluating ? "Evaluating..." : "Submit for Evaluation"}
-            </Button>
-            <Button 
               onClick={handleBackToList}
               className="bg-gray-100 text-black border border-gray-300 hover:bg-gray-200"
             >
@@ -267,13 +260,6 @@ const Whiteboard: React.FC = () => {
           <div className="mb-6">
             <h2 className="text-lg font-semibold mb-2">Challenge Brief</h2>
             <p className="text-gray-700 mb-4">{activeChallenge?.description}</p>
-            
-            <h3 className="text-md font-semibold mb-2">Instructions:</h3>
-            <ul className="list-disc pl-5 space-y-1 mb-6">
-              {activeChallenge?.instructions.map((instruction, index) => (
-                <li key={index} className="text-gray-700">{instruction}</li>
-              ))}
-            </ul>
           </div>
           
           {/* Sticky Notes Section */}
