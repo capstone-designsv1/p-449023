@@ -1,16 +1,13 @@
+
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Form, FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
-import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
-import StickyNote from "@/components/whiteboard/StickyNote";
-import Toolbar from "@/components/whiteboard/Toolbar";
-import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { useForm } from "react-hook-form";
+
+import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
+import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
+import WhiteboardArea from "@/components/whiteboard/WhiteboardArea";
+import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 
 interface StickyNoteType {
   id: string;
@@ -112,9 +109,7 @@ const Whiteboard: React.FC = () => {
   const navigate = useNavigate();
   const [activeChallenge, setActiveChallenge] = useState<ChallengeDetails | null>(null);
   const [notes, setNotes] = useState<StickyNoteType[]>([]);
-  const [newNoteText, setNewNoteText] = useState("");
   const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "select" | "text">("pen");
-  const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   
   // Evaluation state
@@ -122,12 +117,6 @@ const Whiteboard: React.FC = () => {
   const [showResults, setShowResults] = useState(false);
   const [evaluationScore, setEvaluationScore] = useState<number | null>(null);
   const [evaluationFeedback, setEvaluationFeedback] = useState<string | null>(null);
-
-  const form = useForm<EvaluationFormValues>({
-    defaultValues: {
-      finalAnswer: ""
-    }
-  });
 
   useEffect(() => {
     if (challengeId && challengeDetails[challengeId]) {
@@ -137,28 +126,6 @@ const Whiteboard: React.FC = () => {
       navigate("/challenges");
     }
   }, [challengeId, navigate]);
-
-  const addStickyNote = () => {
-    if (!newNoteText.trim()) return;
-    
-    const colors = ["#FEF7CD", "#FEC6A1", "#E5DEFF", "#FFDEE2", "#D3E4FD"];
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    // Place new notes in the sidebar
-    const newNote = {
-      id: `note-${Date.now()}`,
-      text: newNoteText,
-      position: { 
-        x: 20, 
-        y: 30 + notes.length * 20
-      },
-      color: randomColor
-    };
-    
-    setNotes([...notes, newNote]);
-    setNewNoteText("");
-    toast.success("Sticky note added!");
-  };
 
   const updateNotePosition = (id: string, position: { x: number; y: number }) => {
     setNotes(notes.map(note => 
@@ -234,107 +201,35 @@ const Whiteboard: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 p-4">
-        <div className="container mx-auto flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-[rgba(25,26,35,1)]">
-              {activeChallenge?.title || "Loading challenge..."}
-            </h1>
-            <p className="text-gray-600">{activeChallenge?.company}</p>
-          </div>
-          <div className="flex gap-3">
-            <Button 
-              onClick={handleBackToList}
-              className="bg-gray-100 text-black border border-gray-300 hover:bg-gray-200"
-            >
-              Back to Challenges
-            </Button>
-          </div>
-        </div>
-      </header>
+      {activeChallenge && (
+        <WhiteboardHeader 
+          title={activeChallenge.title} 
+          company={activeChallenge.company}
+          onBackToList={handleBackToList}
+        />
+      )}
 
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-80 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold mb-2">Challenge Brief</h2>
-            <p className="text-gray-700 mb-4">{activeChallenge?.description}</p>
-          </div>
-          
-          {/* Sticky Notes Section */}
-          <div className="mb-6">
-            <h3 className="text-md font-semibold mb-2">Your Notes</h3>
-            <Textarea
-              value={newNoteText}
-              onChange={(e) => setNewNoteText(e.target.value)}
-              placeholder="Type your note here..."
-              className="min-h-[80px] mb-3"
-            />
-            <Button 
-              onClick={addStickyNote}
-              className="w-full bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)] mb-4"
-            >
-              Add Note
-            </Button>
-            
-            {/* Display Notes */}
-            <div className="space-y-3 max-h-[200px] overflow-y-auto">
-              {notes.map((note) => (
-                <div 
-                  key={note.id} 
-                  className="p-3 rounded shadow-sm relative"
-                  style={{ backgroundColor: note.color }}
-                >
-                  <button
-                    className="absolute top-1 right-1 p-1 rounded-full hover:bg-gray-200/50 text-gray-600"
-                    onClick={() => deleteNote(note.id)}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                  </button>
-                  <p className="pr-5">{note.text}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Final Answer Section */}
-          <div className="mt-auto">
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmitForEvaluation)} className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="finalAnswer"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-md font-semibold">Final Answer</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Enter your final solution or design rationale here..."
-                          className="min-h-[120px]"
-                          {...field}
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                <Button 
-                  type="submit"
-                  className="w-full bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
-                  disabled={isEvaluating}
-                >
-                  {isEvaluating ? "Evaluating..." : "Submit for Evaluation"}
-                </Button>
-              </form>
-            </Form>
-          </div>
-        </div>
+        <WhiteboardSidebar 
+          description={activeChallenge?.description || ""}
+          notes={notes}
+          setNotes={setNotes}
+          onSubmitForEvaluation={handleSubmitForEvaluation}
+          isEvaluating={isEvaluating}
+        />
 
         {/* Whiteboard area */}
-        <div className="flex-1 relative overflow-hidden" ref={containerRef}>
-          <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
-          <WhiteboardCanvas activeTool={activeTool} onCanvasRef={handleCanvasRef} />
-        </div>
+        <WhiteboardArea 
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
+          notes={notes}
+          updateNotePosition={updateNotePosition}
+          updateNoteText={updateNoteText}
+          deleteNote={deleteNote}
+          onCanvasRef={handleCanvasRef}
+        />
       </div>
 
       {/* Evaluation Results Dialog */}
