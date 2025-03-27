@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Challenges from "./pages/Challenges";
 import Whiteboard from "./pages/Whiteboard";
+import InterviewChat from "./pages/InterviewChat";
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/whiteboard/:challengeId" element={<Whiteboard />} />
+          <Route path="/interview/:companyId" element={<InterviewChat />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

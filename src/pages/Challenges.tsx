@@ -12,6 +12,7 @@ interface Challenge {
   level: "Junior" | "Senior" | "Lead";
   description: string;
   duration: string;
+  type: "whiteboard" | "interview";
 }
 
 const sampleChallenges: Challenge[] = [
@@ -21,7 +22,8 @@ const sampleChallenges: Challenge[] = [
     company: "Uber",
     level: "Junior",
     description: "Create a simplified ride ordering flow that improves the user experience for first-time users.",
-    duration: "45 min"
+    duration: "45 min",
+    type: "whiteboard"
   },
   {
     id: "airbnb-1",
@@ -29,7 +31,8 @@ const sampleChallenges: Challenge[] = [
     company: "Airbnb",
     level: "Senior",
     description: "Design a feature that helps hosts better manage their property bookings and guest communications.",
-    duration: "60 min"
+    duration: "60 min",
+    type: "whiteboard"
   },
   {
     id: "meta-1",
@@ -37,7 +40,8 @@ const sampleChallenges: Challenge[] = [
     company: "Meta",
     level: "Lead",
     description: "Conceptualize improvements to how users interact in group settings within a VR environment.",
-    duration: "90 min"
+    duration: "90 min",
+    type: "whiteboard"
   },
   {
     id: "uber-2",
@@ -45,7 +49,8 @@ const sampleChallenges: Challenge[] = [
     company: "Uber",
     level: "Senior",
     description: "Improve accessibility of the app for users with visual impairments.",
-    duration: "60 min"
+    duration: "60 min",
+    type: "whiteboard"
   },
   {
     id: "airbnb-2",
@@ -53,7 +58,8 @@ const sampleChallenges: Challenge[] = [
     company: "Airbnb",
     level: "Junior",
     description: "Simplify the booking flow to reduce drop-offs and increase conversion.",
-    duration: "45 min"
+    duration: "45 min",
+    type: "whiteboard"
   },
   {
     id: "meta-2",
@@ -61,26 +67,71 @@ const sampleChallenges: Challenge[] = [
     company: "Meta",
     level: "Lead",
     description: "Design a system that maintains consistent user experience across mobile, desktop, and VR.",
-    duration: "90 min"
+    duration: "90 min",
+    type: "whiteboard"
+  },
+  // Interview challenges
+  {
+    id: "uber",
+    title: "AI Interview: Product Design at Uber",
+    company: "Uber",
+    level: "Junior",
+    description: "Practice a realistic product design interview with an AI interviewer from Uber.",
+    duration: "30 min",
+    type: "interview"
+  },
+  {
+    id: "airbnb",
+    title: "AI Interview: Product Design at Airbnb",
+    company: "Airbnb",
+    level: "Senior",
+    description: "Get interviewed by an AI simulating an Airbnb product design interviewer.",
+    duration: "30 min",
+    type: "interview"
+  },
+  {
+    id: "meta",
+    title: "AI Interview: Product Design at Meta",
+    company: "Meta",
+    level: "Lead",
+    description: "Practice your interview skills with an AI that simulates a Meta design interviewer.",
+    duration: "30 min",
+    type: "interview"
   }
 ];
 
 const Challenges: React.FC = () => {
   const navigate = useNavigate();
   const [selectedLevel, setSelectedLevel] = useState<"Junior" | "Senior" | "Lead">("Junior");
+  const [challengeType, setChallengeType] = useState<"whiteboard" | "interview">("whiteboard");
   
-  const filteredChallenges = sampleChallenges.filter(challenge => challenge.level === selectedLevel);
+  const filteredChallenges = sampleChallenges.filter(
+    challenge => challenge.level === selectedLevel && challenge.type === challengeType
+  );
   
-  const handleStartChallenge = (challengeId: string) => {
-    navigate(`/whiteboard/${challengeId}`);
+  const handleStartChallenge = (challenge: Challenge) => {
+    if (challenge.type === "whiteboard") {
+      navigate(`/whiteboard/${challenge.id}`);
+    } else {
+      navigate(`/interview/${challenge.id}`);
+    }
   };
   
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
-      <h1 className="text-4xl font-bold mb-2 text-[rgba(25,26,35,1)]">Design Whiteboard Challenges</h1>
+      <h1 className="text-4xl font-bold mb-2 text-[rgba(25,26,35,1)]">Design Practice Challenges</h1>
       <p className="text-xl mb-8 text-[rgba(28,14,13,1)]">
         Practice real-world product design challenges from top companies.
       </p>
+      
+      <div className="mb-6">
+        <Tabs defaultValue="whiteboard" onValueChange={(value) => setChallengeType(value as "whiteboard" | "interview")}>
+          <TabsList className="mb-4">
+            <TabsTrigger value="whiteboard" className="text-lg px-6">Whiteboard Challenges</TabsTrigger>
+            <TabsTrigger value="interview" className="text-lg px-6">AI Interviews</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
       
       <Tabs defaultValue="Junior" onValueChange={(value) => setSelectedLevel(value as "Junior" | "Senior" | "Lead")}>
         <TabsList className="mb-8 bg-gray-100">
@@ -109,7 +160,7 @@ const Challenges: React.FC = () => {
                 <CardContent>
                   <p className="mb-4">{challenge.description}</p>
                   <Button 
-                    onClick={() => handleStartChallenge(challenge.id)}
+                    onClick={() => handleStartChallenge(challenge)}
                     className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-black border-solid hover:bg-[rgba(77,208,177,1)] transition-colors"
                   >
                     Start Challenge
