@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +13,13 @@ interface StickyNoteType {
   text: string;
   position: { x: number; y: number };
   color: string;
+}
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
 }
 
 interface ChallengeDetails {
@@ -100,10 +106,6 @@ const challengeDetails: Record<string, ChallengeDetails> = {
   }
 };
 
-interface EvaluationFormValues {
-  finalAnswer: string;
-}
-
 const Whiteboard: React.FC = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
@@ -153,7 +155,7 @@ const Whiteboard: React.FC = () => {
     return canvasRef.current.toDataURL();
   };
 
-  const handleSubmitForEvaluation = async (data: EvaluationFormValues) => {
+  const handleSubmitForEvaluation = async (data: { finalAnswer?: string, chatHistory?: ChatMessage[] }) => {
     if (!challengeId) return;
     
     setIsEvaluating(true);
@@ -168,7 +170,8 @@ const Whiteboard: React.FC = () => {
             challengeId,
             canvasData,
             notes,
-            finalAnswer: data.finalAnswer
+            finalAnswer: data.finalAnswer,
+            chatHistory: data.chatHistory
           }
         }
       });
