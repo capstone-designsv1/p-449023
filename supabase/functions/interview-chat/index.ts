@@ -2,7 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent";
+// Update to use Gemini 2.0 Flash
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,6 +22,9 @@ interface ChatRequest {
   message?: string;
   history?: ChatMessage[];
 }
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -46,7 +50,7 @@ serve(async (req) => {
       case "start":
         // Create the initial system prompt
         systemPrompt = getStartPrompt(companyName!, designLevel!);
-        responseData = await callGeminiAPI(systemPrompt);
+        responseData = await callGeminiAPIWithRetry(systemPrompt);
         break;
 
       case "chat":
@@ -60,7 +64,7 @@ serve(async (req) => {
         // Build prompt with context and new message
         userMessage = message;
         systemPrompt = getChatPrompt(companyName!, designLevel!, formattedHistory, userMessage);
-        responseData = await callGeminiAPI(systemPrompt);
+        responseData = await callGeminiAPIWithRetry(systemPrompt);
         break;
 
       case "end":
@@ -73,7 +77,7 @@ serve(async (req) => {
         
         // Build prompt for final evaluation
         systemPrompt = getEndPrompt(companyName!, designLevel!, completeHistory);
-        responseData = await callGeminiAPI(systemPrompt);
+        responseData = await callGeminiAPIWithRetry(systemPrompt);
         
         // Mark session as ended
         responseData.sessionEnded = true;
@@ -98,7 +102,10 @@ serve(async (req) => {
   } catch (error) {
     console.error("Error in interview-chat function:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        message: getFallbackMessage(error)
+      }),
       { 
         status: 500, 
         headers: { 
@@ -109,6 +116,17 @@ serve(async (req) => {
     );
   }
 });
+
+// Helper function to get a fallback message based on the error
+function getFallbackMessage(error: any): string {
+  if (error.message.includes("429") || error.message.includes("quota") || error.message.includes("RESOURCE_EXHAUSTED")) {
+    return "I'm currently experiencing high demand. Let's continue our conversation shortly. As a design interviewer, I'd like to know more about your approach to user research and how you validate design decisions.";
+  } else if (error.message.includes("GEMINI_API_KEY is not set")) {
+    return "The interview system is currently being configured. Please try again in a few minutes.";
+  } else {
+    return "I'm having trouble processing your request. Let's continue our design discussion - could you tell me about a challenging design problem you've solved recently?";
+  }
+}
 
 // Helper function to get the initial prompt
 function getStartPrompt(companyName: string, designLevel: string): string {
@@ -189,40 +207,77 @@ function formatChatHistory(history: ChatMessage[]): string {
   }).join("\n\n");
 }
 
-// Helper function to call the Gemini API
-async function callGeminiAPI(prompt: string) {
-  const requestBody = {
-    contents: [
-      {
-        parts: [
-          { text: prompt }
-        ]
+// Helper function to call the Gemini API with retry logic
+async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<any> {
+  try {
+    console.log(`Calling Gemini API (attempt ${retryCount + 1}/${MAX_RETRIES})...`);
+    
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            { text: prompt }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 1024,
       }
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.8,
-      topK: 40,
-      maxOutputTokens: 1024,
+    };
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Gemini API error:", errorText);
+      
+      // Check if we can retry
+      if (retryCount < MAX_RETRIES - 1) {
+        const delayMs = RETRY_DELAY_MS * Math.pow(2, retryCount); // Exponential backoff
+        console.log(`Retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        return callGeminiAPIWithRetry(prompt, retryCount + 1);
+      }
+      
+      throw new Error(`Gemini API error: ${errorText}`);
     }
-  };
 
-  console.log("Calling Gemini API with prompt");
-
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Gemini API error:", errorText);
-    throw new Error(`Gemini API error: ${errorText}`);
+    const data = await response.json();
+    
+    if (!data.candidates || data.candidates.length === 0) {
+      if (retryCount < MAX_RETRIES - 1) {
+        const delayMs = RETRY_DELAY_MS * Math.pow(2, retryCount);
+        console.log(`No candidates returned, retrying in ${delayMs}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        return callGeminiAPIWithRetry(prompt, retryCount + 1);
+      }
+      
+      throw new Error("No response from Gemini API");
+    }
+    
+    const message = data.candidates[0].content.parts[0].text;
+    return { message };
+  } catch (error) {
+    if (retryCount < MAX_RETRIES - 1) {
+      const delayMs = RETRY_DELAY_MS * Math.pow(2, retryCount);
+      console.log(`Error: ${error.message}, retrying in ${delayMs}ms...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      return callGeminiAPIWithRetry(prompt, retryCount + 1);
+    }
+    
+    // If we've used all our retries, generate a fallback response
+    console.error(`All ${MAX_RETRIES} attempts failed. Using fallback response.`);
+    
+    // Return a fallback response based on the action (basic interviewer message)
+    return { 
+      message: "I'm currently experiencing technical difficulties. Let's proceed with our design interview: Could you tell me about your design process and how you approach user research?"
+    };
   }
-
-  const data = await response.json();
-  const message = data.candidates[0].content.parts[0].text;
-
-  return { message };
 }

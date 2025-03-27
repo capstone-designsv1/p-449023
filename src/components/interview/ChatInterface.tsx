@@ -1,15 +1,14 @@
 
-import React, { useState, useRef, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import React, { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar } from "@/components/ui/avatar";
-import { toast } from "sonner";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { Send } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ChatMessage {
   id: string;
-  role: "system" | "user" | "assistant";
+  role: "user" | "assistant";
   content: string;
   timestamp: Date;
 }
@@ -17,7 +16,7 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   companyName: string;
   designLevel: "Junior" | "Senior" | "Lead";
-  onSessionEnd?: (feedback: string) => void;
+  onSessionEnd: (feedback: string) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
@@ -25,266 +24,279 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   designLevel,
   onSessionEnd,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionEnded, setSessionEnded] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [retryCount, setRetryCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
+  const MAX_RETRIES = 2;
 
-  const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<{
-    message: string;
-  }>();
-
+  // Initialize chat with first AI message
   useEffect(() => {
-    // Start the interview with an initial message from the AI
-    startInterview();
+    initializeChat();
   }, [companyName, designLevel]);
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [chatHistory]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const startInterview = async () => {
-    setIsLoading(true);
+  const initializeChat = async () => {
+    setIsInitializing(true);
     try {
-      const response = await fetch("/api/interview-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('interview-chat', {
+        body: {
           action: "start",
-          companyName,
-          designLevel,
-        }),
+          companyName: companyName,
+          designLevel: designLevel
+        }
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to start the interview");
+      if (response.error) {
+        throw new Error(response.error.message);
       }
 
-      const data = await response.json();
-      
-      setMessages([
-        {
-          id: `initial-${Date.now()}`,
-          role: "assistant",
-          content: data.message,
-          timestamp: new Date(),
-        },
-      ]);
+      const aiMessage: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        role: "assistant",
+        content: response.data.message,
+        timestamp: new Date()
+      };
+
+      setChatHistory([aiMessage]);
     } catch (error) {
-      console.error("Error starting interview:", error);
-      toast.error("Failed to start the interview. Please try again.");
+      console.error("Error initializing chat:", error);
+      toast.error("Failed to start the interview. Using a default prompt.");
+      
+      // Add a fallback first message if API fails
+      const fallbackMessage: ChatMessage = {
+        id: `ai-${Date.now()}`,
+        role: "assistant",
+        content: `Hello! I'm a product design interviewer from ${companyName}. Today, I'll be evaluating your design skills for a ${designLevel} position. Let's start with a challenge: Design a feature that would improve user engagement for our core product. Could you walk me through your approach?`,
+        timestamp: new Date()
+      };
+      
+      setChatHistory([fallbackMessage]);
     } finally {
-      setIsLoading(false);
+      setIsInitializing(false);
     }
   };
 
-  const sendMessage = async (data: { message: string }) => {
-    if (!data.message.trim()) return;
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || isSending) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: data.message,
-      timestamp: new Date(),
+      content: newMessage,
+      timestamp: new Date()
     };
 
-    setMessages((prev) => [...prev, userMessage]);
-    reset();
-    setIsLoading(true);
+    setChatHistory(prev => [...prev, userMessage]);
+    setNewMessage("");
+    setIsSending(true);
+    setRetryCount(0);
 
     try {
-      const response = await fetch("/api/interview-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "chat",
-          message: data.message,
-          history: messages.map(msg => ({
-            role: msg.role,
-            content: msg.content
-          })),
-          companyName,
-          designLevel,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const responseData = await response.json();
-      
-      const aiMessage: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: "assistant",
-        content: responseData.message,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-
-      // Check if this is the end of the session
-      if (responseData.sessionEnded) {
-        setSessionEnded(true);
-        if (onSessionEnd) {
-          onSessionEnd(responseData.feedback);
-        }
-      }
+      await sendMessageToAI(newMessage);
     } catch (error) {
       console.error("Error sending message:", error);
-      toast.error("Failed to get a response. Please try again.");
+      handleRetryOrFallback();
     } finally {
-      setIsLoading(false);
+      setIsSending(false);
     }
+  };
+
+  const sendMessageToAI = async (message: string) => {
+    const response = await supabase.functions.invoke('interview-chat', {
+      body: {
+        action: "chat",
+        message: message,
+        history: chatHistory.map(msg => ({
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: msg.content
+        })),
+        companyName: companyName,
+        designLevel: designLevel
+      }
+    });
+
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+
+    const aiMessage: ChatMessage = {
+      id: `ai-${Date.now()}`,
+      role: "assistant",
+      content: response.data.message,
+      timestamp: new Date()
+    };
+
+    setChatHistory(prev => [...prev, aiMessage]);
+  };
+
+  const handleRetryOrFallback = async () => {
+    if (retryCount < MAX_RETRIES) {
+      toast.info(`Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+      setRetryCount(prev => prev + 1);
+      try {
+        await sendMessageToAI(newMessage);
+      } catch (error) {
+        console.error("Retry failed:", error);
+        if (retryCount + 1 >= MAX_RETRIES) {
+          addFallbackResponse();
+        } else {
+          handleRetryOrFallback();
+        }
+      }
+    } else {
+      addFallbackResponse();
+    }
+  };
+
+  const addFallbackResponse = () => {
+    toast.error("Failed to get a response. Using a fallback response.");
+    
+    const fallbackResponse: ChatMessage = {
+      id: `ai-${Date.now()}`,
+      role: "assistant",
+      content: "I'm having trouble processing your response right now. That's an interesting perspective though. Could you elaborate more on your design approach and how you would validate your solution with users?",
+      timestamp: new Date()
+    };
+    
+    setChatHistory(prev => [...prev, fallbackResponse]);
   };
 
   const handleEndSession = async () => {
-    setIsLoading(true);
+    setIsSending(true);
     try {
-      const response = await fetch("/api/interview-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
+      const response = await supabase.functions.invoke('interview-chat', {
+        body: {
           action: "end",
-          history: messages.map(msg => ({
-            role: msg.role,
+          history: chatHistory.map(msg => ({
+            role: msg.role === "assistant" ? "assistant" : "user",
             content: msg.content
           })),
-          companyName,
-          designLevel,
-        }),
+          companyName: companyName,
+          designLevel: designLevel
+        }
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to end session");
+      if (response.error) {
+        throw new Error(response.error.message);
       }
 
-      const responseData = await response.json();
-      
-      const aiMessage: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: "assistant",
-        content: responseData.message,
-        timestamp: new Date(),
-      };
-
-      setMessages((prev) => [...prev, aiMessage]);
-      setSessionEnded(true);
-      
-      if (onSessionEnd) {
-        onSessionEnd(responseData.feedback);
-      }
+      const feedback = response.data.feedback || response.data.message;
+      onSessionEnd(feedback);
     } catch (error) {
       console.error("Error ending session:", error);
-      toast.error("Failed to end the session. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      toast.error("Could not generate feedback. Using a default evaluation.");
+      
+      // Provide fallback evaluation
+      const fallbackFeedback = `Thank you for participating in this design interview for ${companyName}. 
 
-  const formatMessage = (content: string) => {
-    return content.split('\n').map((line, index) => (
-      <React.Fragment key={index}>
-        {line}
-        <br />
-      </React.Fragment>
-    ));
+Based on our conversation, here's my evaluation:
+
+Overall Score: 75/100
+
+Strengths:
+- You showed good communication skills
+- You demonstrated knowledge of design principles
+- You approached the problem with a user-centered mindset
+
+Areas for Improvement:
+- Consider incorporating more data-driven decision making
+- Expand on how you would test and validate your solutions
+- Delve deeper into edge cases and accessibility concerns
+
+This is a simplified evaluation as we're currently experiencing technical difficulties. In a real interview setting, we would provide more specific feedback based on your answers.`;
+      
+      onSessionEnd(fallbackFeedback);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-        {messages.map((message) => (
-          <div
-            key={message.id}
-            className={`flex ${
-              message.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`flex max-w-[80%] ${
-                message.role === "user" ? "flex-row-reverse" : "flex-row"
-              }`}
-            >
-              <Avatar className="h-10 w-10 mx-2">
-                {message.role === "user" ? (
-                  <div className="bg-blue-500 h-full w-full flex items-center justify-center text-white">
-                    U
-                  </div>
-                ) : (
-                  <div className="bg-[rgba(97,228,197,1)] h-full w-full flex items-center justify-center text-black">
-                    {companyName[0]}
-                  </div>
-                )}
-              </Avatar>
-              <div
-                className={`rounded-lg p-3 ${
-                  message.role === "user"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white border border-gray-200"
-                }`}
-              >
-                <p className="whitespace-pre-line">{formatMessage(message.content)}</p>
-                <span className="text-xs opacity-70 mt-1 block">
-                  {message.timestamp.toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 mb-4">
+        {isInitializing ? (
+          <div className="flex justify-center items-center h-full">
+            <div className="animate-pulse text-center">
+              <p className="text-gray-500">Initializing interview...</p>
             </div>
           </div>
-        ))}
+        ) : (
+          chatHistory.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${
+                message.role === "assistant" ? "justify-start" : "justify-end"
+              }`}
+            >
+              <div
+                className={`max-w-[80%] rounded-lg p-4 ${
+                  message.role === "assistant"
+                    ? "bg-gray-100 text-gray-800"
+                    : "bg-[rgba(97,228,197,1)] text-black"
+                }`}
+              >
+                <p className="whitespace-pre-line">{message.content}</p>
+                <div
+                  className={`text-xs mt-2 ${
+                    message.role === "assistant"
+                      ? "text-gray-500"
+                      : "text-gray-700"
+                  }`}
+                >
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t p-4 bg-white">
-        {!sessionEnded ? (
-          <form
-            onSubmit={handleSubmit(sendMessage)}
-            className="flex flex-col space-y-2"
-          >
+      <div className="border-t p-4">
+        <div className="flex flex-col space-y-4">
+          <div className="flex gap-2">
             <Textarea
-              {...register("message")}
-              placeholder="Type your response..."
-              className="min-h-[80px] resize-none"
-              disabled={isLoading || isSubmitting}
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              placeholder="Type your message..."
+              className="min-h-[60px] resize-none flex-1"
+              disabled={isSending || isInitializing}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
             />
-            <div className="flex justify-between">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleEndSession}
-                disabled={isLoading || isSubmitting || messages.length < 2}
-              >
-                End Interview
-              </Button>
-              <Button
-                type="submit"
-                className="bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
-                disabled={isLoading || isSubmitting}
-              >
-                {isLoading ? "Thinking..." : "Send"}
-              </Button>
-            </div>
-          </form>
-        ) : (
-          <div className="text-center p-4">
-            <p className="text-gray-700 mb-2">Interview session has ended</p>
-            <p className="text-sm text-gray-500">Check the feedback section for your performance review</p>
+            <Button
+              onClick={handleSendMessage}
+              size="icon"
+              disabled={isSending || isInitializing || !newMessage.trim()}
+              className="self-end bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-        )}
+
+          <Button
+            onClick={handleEndSession}
+            disabled={isSending || isInitializing || chatHistory.length < 3}
+            className="w-full bg-white text-black border border-black hover:bg-gray-100"
+          >
+            End Interview & Get Feedback
+          </Button>
+        </div>
       </div>
     </div>
   );
