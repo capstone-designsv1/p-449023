@@ -12,14 +12,16 @@ interface ChatMessage {
 
 interface SubmitEvaluationButtonProps {
   chatHistory: ChatMessage[];
-  onSubmit: (data: { chatHistory?: ChatMessage[] }) => void;
+  onSubmit: (data: { chatHistory?: ChatMessage[], industry?: string }) => void;
   isEvaluating: boolean;
+  industry?: string;
 }
 
 const SubmitEvaluationButton: React.FC<SubmitEvaluationButtonProps> = ({
   chatHistory,
   onSubmit,
-  isEvaluating
+  isEvaluating,
+  industry
 }) => {
   const handleSubmit = () => {
     if (chatHistory.length <= 1) {
@@ -27,7 +29,7 @@ const SubmitEvaluationButton: React.FC<SubmitEvaluationButtonProps> = ({
       return;
     }
     
-    onSubmit({ chatHistory });
+    onSubmit({ chatHistory, industry });
   };
 
   return (

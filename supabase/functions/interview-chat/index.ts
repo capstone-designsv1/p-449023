@@ -20,6 +20,7 @@ interface ChatRequest {
   designLevel?: "Junior" | "Senior" | "Lead";
   message?: string;
   history?: ChatMessage[];
+  industry?: string;
 }
 
 serve(async (req) => {
@@ -34,9 +35,9 @@ serve(async (req) => {
     }
 
     const requestData: ChatRequest = await req.json();
-    const { action, companyName, designLevel, message, history } = requestData;
+    const { action, companyName, designLevel, message, history, industry } = requestData;
 
-    console.log(`Processing ${action} request for ${companyName} at ${designLevel} level`);
+    console.log(`Processing ${action} request for ${companyName} at ${designLevel} level, industry: ${industry || 'not specified'}`);
 
     let systemPrompt = "";
     let userMessage = "";
@@ -45,7 +46,7 @@ serve(async (req) => {
     switch (action) {
       case "start":
         // Create the initial system prompt
-        systemPrompt = getStartPrompt(companyName!, designLevel!);
+        systemPrompt = getStartPrompt(companyName!, designLevel!, industry);
         responseData = await callGeminiAPI(systemPrompt);
         break;
 
@@ -59,7 +60,7 @@ serve(async (req) => {
         
         // Build prompt with context and new message
         userMessage = message;
-        systemPrompt = getChatPrompt(companyName!, designLevel!, formattedHistory, userMessage);
+        systemPrompt = getChatPrompt(companyName!, designLevel!, formattedHistory, userMessage, industry);
         responseData = await callGeminiAPI(systemPrompt);
         break;
 
@@ -72,7 +73,7 @@ serve(async (req) => {
         const completeHistory = formatChatHistory(history);
         
         // Build prompt for final evaluation
-        systemPrompt = getEndPrompt(companyName!, designLevel!, completeHistory);
+        systemPrompt = getEndPrompt(companyName!, designLevel!, completeHistory, industry);
         responseData = await callGeminiAPI(systemPrompt);
         
         // Mark session as ended
@@ -111,14 +112,20 @@ serve(async (req) => {
 });
 
 // Helper function to get the initial prompt
-function getStartPrompt(companyName: string, designLevel: string): string {
-  return `You are a senior product design interviewer at ${companyName}. You're conducting a ${designLevel} Product Designer interview. 
+function getStartPrompt(companyName: string, designLevel: string, industry?: string): string {
+  // Set default industry to technology if none provided
+  const effectiveIndustry = industry || getIndustryFromCompany(companyName);
+  
+  // Adjust complexity based on design level
+  const complexityLevel = getComplexityByLevel(designLevel);
+  
+  return `You are a senior product design interviewer at ${companyName}. You're conducting a ${designLevel} Product Designer interview focused on the ${effectiveIndustry} industry.
   
 Your task is to simulate a realistic product design interview experience focusing on whiteboard challenges and design thinking.
 
-For this first message, introduce yourself briefly as a design interviewer from ${companyName}. Then, present a design challenge appropriate for a ${designLevel} Product Designer. 
+For this first message, introduce yourself briefly as a design interviewer from ${companyName}. Then, present a design challenge appropriate for a ${designLevel} Product Designer with ${complexityLevel} complexity. 
 
-The challenge should be specific to ${companyName}'s product space and business. For example, if you're Uber, it might be related to ride-sharing or food delivery. If you're Airbnb, it might be related to accommodations or experiences.
+The challenge should be specific to the ${effectiveIndustry} industry and related to ${companyName}'s business domain. Create a scenario that would be realistic for a ${companyName} product designer working in the ${effectiveIndustry} space.
 
 Make the challenge realistic but concise. Ask one clear question to get the candidate started.
 
@@ -126,8 +133,11 @@ IMPORTANT: Keep your response conversational, friendly, and encouraging, but pro
 }
 
 // Helper function to get the continuation prompt
-function getChatPrompt(companyName: string, designLevel: string, history: string, userMessage: string): string {
-  return `You are a senior product design interviewer at ${companyName}. You're conducting a ${designLevel} Product Designer interview.
+function getChatPrompt(companyName: string, designLevel: string, history: string, userMessage: string, industry?: string): string {
+  const effectiveIndustry = industry || getIndustryFromCompany(companyName);
+  const complexityLevel = getComplexityByLevel(designLevel);
+  
+  return `You are a senior product design interviewer at ${companyName}. You're conducting a ${designLevel} Product Designer interview focused on the ${effectiveIndustry} industry.
 
 INTERVIEW HISTORY:
 ${history}
@@ -143,8 +153,8 @@ Your task is to continue the interview naturally. Review the candidate's respons
 4. Guide the discussion toward important design considerations they might have missed
 
 IMPORTANT GUIDELINES:
-- Stay in character as a ${companyName} interviewer
-- Don't be too easy or too difficult - adjust to the ${designLevel} level
+- Stay in character as a ${companyName} interviewer in the ${effectiveIndustry} industry
+- Maintain ${complexityLevel} complexity appropriate for the ${designLevel} level
 - Focus on product thinking, user-centered design, and problem-solving skills
 - Ask one clear question at a time
 - Don't solve the problem for them
@@ -154,8 +164,10 @@ Respond as you would in a real interview situation.`;
 }
 
 // Helper function to get the final evaluation prompt
-function getEndPrompt(companyName: string, designLevel: string, history: string): string {
-  return `You are a senior product design interviewer at ${companyName}. You've just completed a ${designLevel} Product Designer interview.
+function getEndPrompt(companyName: string, designLevel: string, history: string, industry?: string): string {
+  const effectiveIndustry = industry || getIndustryFromCompany(companyName);
+  
+  return `You are a senior product design interviewer at ${companyName}. You've just completed a ${designLevel} Product Designer interview focused on the ${effectiveIndustry} industry.
 
 COMPLETE INTERVIEW HISTORY:
 ${history}
@@ -168,7 +180,7 @@ Now, it's time to provide comprehensive feedback on the candidate's performance.
    - Key strengths demonstrated
    - Areas for improvement
    - Specific examples from their answers that support your evaluation
-   - Whether they would likely pass this round in a real interview at ${companyName}
+   - Whether they would likely pass this round in a real interview at ${companyName} for a ${designLevel} role in the ${effectiveIndustry} industry
 
 Focus your evaluation on:
 - Problem-solving approach
@@ -179,6 +191,45 @@ Focus your evaluation on:
 - Technical design knowledge appropriate for ${designLevel} level
 
 Make your feedback constructive, balanced, and actionable. Be honest but encouraging.`;
+}
+
+// Helper function to determine industry from company if not explicitly provided
+function getIndustryFromCompany(companyName: string): string {
+  const companyIndustryMap: Record<string, string> = {
+    'Uber': 'transportation and delivery',
+    'Airbnb': 'hospitality and accommodation',
+    'Meta': 'social media and technology',
+    'Spotify': 'music streaming',
+    'Netflix': 'video streaming',
+    'Amazon': 'e-commerce and cloud services',
+    'Google': 'search and technology',
+    'Apple': 'technology and consumer electronics',
+    'Microsoft': 'software and cloud services',
+    'Twitter': 'social media',
+    'LinkedIn': 'professional networking',
+    'Stripe': 'fintech and payments',
+    'Shopify': 'e-commerce',
+    'Square': 'fintech',
+    'DoorDash': 'food delivery',
+    'Slack': 'workplace communication',
+    'Zoom': 'video conferencing',
+  };
+  
+  return companyIndustryMap[companyName] || 'technology';
+}
+
+// Helper function to determine complexity based on design level
+function getComplexityByLevel(designLevel: string): string {
+  switch (designLevel) {
+    case 'Junior':
+      return 'low to moderate';
+    case 'Senior':
+      return 'moderate to high';
+    case 'Lead':
+      return 'high';
+    default:
+      return 'moderate';
+  }
 }
 
 // Helper function to format chat history
