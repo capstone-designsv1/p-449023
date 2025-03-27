@@ -2,7 +2,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,8 +46,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not set");
+    if (!GOOGLE_API_KEY) {
+      throw new Error("GOOGLE_API_KEY is not set");
     }
 
     const { audio } = await req.json();
@@ -58,37 +58,53 @@ serve(async (req) => {
 
     console.log("Received audio data, processing...");
     
-    // Process audio in chunks
-    const binaryAudio = processBase64Chunks(audio);
+    // Convert base64 audio to a recognizable format
+    // Google Speech-to-Text accepts base64 directly, so no need to process
+    // into binary like we did with OpenAI
     
-    // Prepare form data
-    const formData = new FormData();
-    const blob = new Blob([binaryAudio], { type: 'audio/webm' });
-    formData.append('file', blob, 'audio.webm');
-    formData.append('model', 'whisper-1');
-
-    console.log("Sending to OpenAI Whisper API...");
+    console.log("Sending to Google Speech-to-Text API...");
     
-    // Send to OpenAI
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    // Send to Google Cloud Speech-to-Text API
+    const response = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      body: formData,
+      body: JSON.stringify({
+        config: {
+          encoding: 'WEBM_OPUS',
+          sampleRateHertz: 48000,
+          languageCode: 'en-US',
+          model: 'latest_long', // Use a model suitable for conversations
+          enableAutomaticPunctuation: true,
+        },
+        audio: {
+          content: audio // Direct base64 input
+        }
+      }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", errorText);
-      throw new Error(`OpenAI API error: ${errorText}`);
+      console.error("Google API error:", errorText);
+      throw new Error(`Google API error: ${errorText}`);
     }
 
     const result = await response.json();
-    console.log("Transcription successful:", result.text);
+    let transcribedText = '';
+    
+    if (result.results && result.results.length > 0) {
+      transcribedText = result.results
+        .map((result: any) => result.alternatives[0].transcript)
+        .join(' ');
+      console.log("Transcription successful:", transcribedText);
+    } else {
+      console.warn("No transcription results returned");
+      transcribedText = '';
+    }
 
     return new Response(
-      JSON.stringify({ text: result.text }),
+      JSON.stringify({ text: transcribedText }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
@@ -99,7 +115,7 @@ serve(async (req) => {
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      },
     );
   }
 });

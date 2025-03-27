@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,8 +15,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not set");
+    if (!GOOGLE_API_KEY) {
+      throw new Error("GOOGLE_API_KEY is not set");
     }
 
     const { text, voice } = await req.json();
@@ -25,36 +25,54 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
-    console.log(`Converting text to speech with voice ${voice || 'alloy'}...`);
+    console.log(`Converting text to speech with voice ${voice || 'en-US-Neural2-F'}...`);
 
-    // Generate speech from text
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    // Map simple voice names to Google's more complex voice names
+    const voiceMapping: Record<string, string> = {
+      'alloy': 'en-US-Neural2-F', // Female voice
+      'echo': 'en-US-Neural2-C',  // Female voice (different style)
+      'fable': 'en-US-Neural2-F', // Female voice
+      'onyx': 'en-US-Neural2-D',  // Male voice
+      'nova': 'en-US-Neural2-A',  // Female voice
+      'shimmer': 'en-US-Neural2-E' // Female voice
+    };
+
+    // Use the mapped voice or default
+    const googleVoice = voiceMapping[voice] || 'en-US-Neural2-F';
+    const gender = googleVoice.includes('-D') || googleVoice.includes('-J') ? 'MALE' : 'FEMALE';
+
+    // Generate speech from text using Google Cloud Text-to-Speech API
+    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1',
-        input: text,
-        voice: voice || 'alloy',
-        response_format: 'mp3',
+        input: {
+          text: text
+        },
+        voice: {
+          languageCode: 'en-US',
+          name: googleVoice,
+          ssmlGender: gender
+        },
+        audioConfig: {
+          audioEncoding: 'MP3'
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenAI API error:", errorText);
-      throw new Error(`OpenAI API error: ${errorText}`);
+      console.error("Google API error:", errorText);
+      throw new Error(`Google API error: ${errorText}`);
     }
 
     console.log("Text-to-speech conversion successful");
     
-    // Convert audio buffer to base64
-    const arrayBuffer = await response.arrayBuffer();
-    const base64Audio = btoa(
-      String.fromCharCode(...new Uint8Array(arrayBuffer))
-    );
+    // The response contains the audio content as a base64 encoded string
+    const result = await response.json();
+    const base64Audio = result.audioContent;
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
