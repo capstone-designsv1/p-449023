@@ -152,6 +152,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           chatHistory.map((message) => (
             <ChatMessage 
               key={message.id}
+              id={message.id}
               role={message.role}
               content={message.content}
               timestamp={message.timestamp}
