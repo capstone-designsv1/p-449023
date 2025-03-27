@@ -1,7 +1,8 @@
 
-import React, { useState } from "react";
+import React from "react";
 import ChatInterface from "./ChatInterface";
 import StickyNoteInput from "./StickyNoteInput";
+import { useChallengeContext } from "@/context/ChallengeContext";
 
 interface StickyNoteType {
   id: string;
@@ -32,8 +33,6 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   onSubmitForEvaluation,
   isEvaluating,
 }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-
   return (
     <div className="w-80 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
       {/* Challenge Brief Section */}
@@ -44,8 +43,6 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
       
       {/* Interview Partner Section - Using ChatInterface component */}
       <ChatInterface
-        messages={messages}
-        setMessages={setMessages}
         onSubmitForEvaluation={onSubmitForEvaluation}
         isEvaluating={isEvaluating}
       />

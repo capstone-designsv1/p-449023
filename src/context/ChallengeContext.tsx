@@ -36,6 +36,15 @@ interface ChallengeContextType {
   setEvaluationScore: React.Dispatch<React.SetStateAction<number | null>>;
   evaluationFeedback: string | null;
   setEvaluationFeedback: React.Dispatch<React.SetStateAction<string | null>>;
+  chatHistory: ChatMessage[];
+  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  clearChatHistory: () => void;
+  evaluationStrengths: string[];
+  setEvaluationStrengths: React.Dispatch<React.SetStateAction<string[]>>;
+  evaluationImprovements: string[];
+  setEvaluationImprovements: React.Dispatch<React.SetStateAction<string[]>>;
+  evaluationActionable: string[];
+  setEvaluationActionable: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 const ChallengeContext = createContext<ChallengeContextType | undefined>(undefined);
@@ -47,6 +56,14 @@ export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children 
   const [showResults, setShowResults] = useState(false);
   const [evaluationScore, setEvaluationScore] = useState<number | null>(null);
   const [evaluationFeedback, setEvaluationFeedback] = useState<string | null>(null);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [evaluationStrengths, setEvaluationStrengths] = useState<string[]>([]);
+  const [evaluationImprovements, setEvaluationImprovements] = useState<string[]>([]);
+  const [evaluationActionable, setEvaluationActionable] = useState<string[]>([]);
+
+  const clearChatHistory = () => {
+    setChatHistory([]);
+  };
 
   return (
     <ChallengeContext.Provider
@@ -63,6 +80,15 @@ export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children 
         setEvaluationScore,
         evaluationFeedback,
         setEvaluationFeedback,
+        chatHistory,
+        setChatHistory,
+        clearChatHistory,
+        evaluationStrengths,
+        setEvaluationStrengths,
+        evaluationImprovements,
+        setEvaluationImprovements,
+        evaluationActionable,
+        setEvaluationActionable,
       }}
     >
       {children}

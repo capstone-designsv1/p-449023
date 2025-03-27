@@ -19,7 +19,9 @@ export const useWhiteboard = () => {
   const { 
     activeChallenge, setActiveChallenge, 
     notes, isEvaluating, setIsEvaluating,
-    setShowResults, setEvaluationScore, setEvaluationFeedback 
+    setShowResults, setEvaluationScore, setEvaluationFeedback,
+    clearChatHistory, chatHistory,
+    setEvaluationStrengths, setEvaluationImprovements, setEvaluationActionable
   } = useChallengeContext();
   
   const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "select" | "text">("pen");
@@ -67,7 +69,7 @@ export const useWhiteboard = () => {
             canvasData,
             notes,
             finalAnswer: data.finalAnswer,
-            chatHistory: data.chatHistory
+            chatHistory: data.chatHistory || chatHistory
           }
         }
       });
@@ -76,9 +78,12 @@ export const useWhiteboard = () => {
         throw new Error(response.error.message);
       }
       
-      const { score, feedback } = response.data;
+      const { score, feedback, strengths, improvements, actionable } = response.data;
       setEvaluationScore(score);
       setEvaluationFeedback(feedback);
+      setEvaluationStrengths(strengths || []);
+      setEvaluationImprovements(improvements || []);
+      setEvaluationActionable(actionable || []);
       
       toast.success("Challenge evaluation completed!");
     } catch (error) {
@@ -100,6 +105,7 @@ export const useWhiteboard = () => {
   const initializeChallenge = () => {
     if (challengeId && challengeDetails[challengeId]) {
       setActiveChallenge(challengeDetails[challengeId]);
+      clearChatHistory();
       toast(`Challenge loaded: ${challengeDetails[challengeId].title}`);
     } else {
       navigate("/challenges");

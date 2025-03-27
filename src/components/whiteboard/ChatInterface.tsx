@@ -6,6 +6,7 @@ import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import ChatMessage from "./ChatMessage";
+import { useChallengeContext } from "@/context/ChallengeContext";
 
 interface ChatMessage {
   id: string;
@@ -15,26 +16,23 @@ interface ChatMessage {
 }
 
 interface ChatInterfaceProps {
-  messages: ChatMessage[];
-  setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   onSubmitForEvaluation: (data: { chatHistory?: ChatMessage[] }) => void;
   isEvaluating: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  messages,
-  setMessages,
   onSubmitForEvaluation,
   isEvaluating
 }) => {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { chatHistory, setChatHistory, activeChallenge } = useChallengeContext();
 
   // Scroll to bottom of chat when new messages arrive
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [chatHistory]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -42,17 +40,19 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
   // Initialize chat with the first AI message when component mounts
   useEffect(() => {
-    if (messages.length === 0) {
+    if (chatHistory.length === 0) {
       initializeChat();
     }
   }, []);
 
   const initializeChat = async () => {
     try {
+      const companyName = activeChallenge?.company || "Uber";
+      
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
           action: "start",
-          companyName: "Uber", // This should ideally come from the challenge context
+          companyName: companyName,
           designLevel: "Senior" // This should ideally be configurable
         }
       });
@@ -68,7 +68,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         timestamp: new Date()
       };
 
-      setMessages([aiMessage]);
+      setChatHistory([aiMessage]);
     } catch (error) {
       console.error("Error initializing chat:", error);
       toast.error("Failed to start the interview. Please try again.");
@@ -85,20 +85,22 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       timestamp: new Date()
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setChatHistory((prev) => [...prev, userMessage]);
     setNewMessage("");
     setIsSending(true);
 
     try {
+      const companyName = activeChallenge?.company || "Uber";
+      
       const response = await supabase.functions.invoke('interview-chat', {
         body: {
           action: "chat",
           message: newMessage,
-          history: messages.map(msg => ({
+          history: chatHistory.map(msg => ({
             role: msg.role,
             content: msg.content
           })),
-          companyName: "Uber", // This should ideally come from the challenge context
+          companyName: companyName,
           designLevel: "Senior" // This should ideally be configurable
         }
       });
@@ -114,7 +116,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         timestamp: new Date()
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setChatHistory((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Error sending message:", error);
       toast.error("Failed to get a response. Please try again.");
@@ -124,12 +126,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   };
 
   const handleSubmitEvaluation = async () => {
-    if (messages.length <= 1) {
+    if (chatHistory.length <= 1) {
       toast.error("Please have a conversation before submitting for evaluation");
       return;
     }
     
-    onSubmitForEvaluation({ chatHistory: messages });
+    onSubmitForEvaluation({ chatHistory: chatHistory });
   };
 
   return (
@@ -138,12 +140,12 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       
       {/* Chat Messages */}
       <div className="flex-1 overflow-y-auto bg-gray-50 rounded-md p-3 mb-3 min-h-[200px] max-h-[300px]">
-        {messages.length === 0 ? (
+        {chatHistory.length === 0 ? (
           <div className="text-gray-400 text-center py-4">
             Starting interview conversation...
           </div>
         ) : (
-          messages.map((message) => (
+          chatHistory.map((message) => (
             <ChatMessage 
               key={message.id}
               id={message.id}
@@ -185,7 +187,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <Button 
         onClick={handleSubmitEvaluation}
         className="w-full mt-3 bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
-        disabled={isEvaluating || messages.length <= 1}
+        disabled={isEvaluating || chatHistory.length <= 1}
       >
         {isEvaluating ? "Evaluating..." : "Submit for Evaluation"}
       </Button>

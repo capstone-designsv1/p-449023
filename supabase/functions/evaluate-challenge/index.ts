@@ -47,14 +47,6 @@ serve(async (req) => {
 
     console.log(`Processing submission for challenge: ${challengeId}`);
 
-    // For this demo, we'll generate a simulated evaluation
-    // In a real implementation, you would:
-    // 1. Send the whiteboard data and answers to Gemini API
-    // 2. Evaluate the submission against model answers
-    // 3. Return detailed feedback and a score
-
-    console.log("Calling Gemini API for evaluation...");
-    
     // Format the chat history if it exists
     let formattedChatHistory = "";
     if (chatHistory && chatHistory.length > 0) {
@@ -91,12 +83,18 @@ serve(async (req) => {
       7. Ability to respond to questions and challenges
       
       Generate a score from 0-100 and provide detailed constructive feedback.
-      Format your response as:
+      
+      Format your response as a JSON object with the following structure:
       {
         "score": [numeric score between 0-100],
-        "feedback": [detailed paragraph with specific strengths and areas for improvement]
+        "feedback": [overall paragraph with feedback, keep it concise and high-level],
+        "strengths": [array of 3-5 specific strengths demonstrated by the candidate],
+        "improvements": [array of 3-5 specific areas where the candidate could improve],
+        "actionable": [array of 3-5 specific, actionable steps the candidate can take to improve]
       }
     `;
+    
+    console.log("Calling Gemini API for evaluation...");
     
     // Call Gemini API
     const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -130,29 +128,44 @@ serve(async (req) => {
 
     // Try to extract JSON from the response
     let jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-    let result = {};
+    let result = {
+      score: 65,
+      feedback: "The candidate showed a reasonable understanding of the design challenge. " + 
+                "There were some good initial ideas, but the solution could be more comprehensive. " +
+                "Consider adding more user-centered design thinking and explaining your rationale more clearly.",
+      strengths: [
+        "Shows good understanding of basic design concepts",
+        "Able to articulate ideas clearly",
+        "Demonstrated some user empathy"
+      ],
+      improvements: [
+        "Could explore a wider range of solutions",
+        "Need more focus on edge cases",
+        "Could provide more justification for design decisions"
+      ],
+      actionable: [
+        "Practice articulating your design process more clearly",
+        "Consider user needs more deeply in your solutions",
+        "Sketch multiple alternatives before settling on a final solution"
+      ]
+    };
     
     if (jsonMatch) {
       try {
-        result = JSON.parse(jsonMatch[0]);
+        const parsedResult = JSON.parse(jsonMatch[0]);
+        
+        // Ensure all expected properties exist in the parsed result
+        result = {
+          score: parsedResult.score || result.score,
+          feedback: parsedResult.feedback || result.feedback,
+          strengths: parsedResult.strengths || result.strengths,
+          improvements: parsedResult.improvements || result.improvements,
+          actionable: parsedResult.actionable || result.actionable
+        };
       } catch (e) {
         console.error("Error parsing JSON from Gemini response:", e);
-        // If parsing fails, use default values
-        result = {
-          score: 65,
-          feedback: "The candidate showed a reasonable understanding of the design challenge. " + 
-                   "There were some good initial ideas, but the solution could be more comprehensive. " +
-                   "Consider adding more user-centered design thinking and explaining your rationale more clearly."
-        };
+        // Using the default values defined above
       }
-    } else {
-      // Default values if no JSON found
-      result = {
-        score: 65,
-        feedback: "The candidate showed a reasonable understanding of the design challenge. " + 
-                 "There were some good initial ideas, but the solution could be more comprehensive. " +
-                 "Consider adding more user-centered design thinking and explaining your rationale more clearly."
-      };
     }
 
     console.log(`Evaluation complete. Score: ${result.score}`);
@@ -174,7 +187,10 @@ serve(async (req) => {
       JSON.stringify({ 
         error: error.message,
         score: 50,
-        feedback: "We encountered an error while evaluating your submission. This is likely due to a technical issue on our end. Your work has been saved and can be evaluated later."
+        feedback: "We encountered an error while evaluating your submission. This is likely due to a technical issue on our end. Your work has been saved and can be evaluated later.",
+        strengths: ["Unable to determine due to technical error"],
+        improvements: ["Unable to determine due to technical error"],
+        actionable: ["Please try submitting again in a few minutes"]
       }),
       { 
         status: 500, 
