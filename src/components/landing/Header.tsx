@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Button } from "@/components/ui/button";
 
@@ -26,7 +27,7 @@ const Header: React.FC = () => {
           >
             Login
           </a>
-          <Button className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-4 rounded-[15px] border-[rgba(25,26,35,1)] border-solid hover:bg-[rgba(77,208,177,1)] transition-colors max-md:px-5">
+          <Button className="bg-[rgba(97,228,197,1)] border gap-2.5 text-black px-8 py-[18px] rounded-[15px] border-[rgba(25,26,35,1)] border-solid hover:bg-[rgba(77,208,177,1)] transition-colors max-md:px-5">
             Sign up
           </Button>
         </div>
