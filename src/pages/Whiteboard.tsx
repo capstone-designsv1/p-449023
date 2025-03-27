@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,9 @@ import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
 import StickyNote from "@/components/whiteboard/StickyNote";
 import Toolbar from "@/components/whiteboard/Toolbar";
 import EvaluationResults from "@/components/whiteboard/EvaluationResults";
+import FigJamEmbed from "@/components/whiteboard/FigJamEmbed";
+import FallbackWhiteboard from "@/components/whiteboard/FallbackWhiteboard";
+import FigmaAuth from "@/components/whiteboard/FigmaAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -23,6 +25,7 @@ interface ChallengeDetails {
   company: string;
   description: string;
   instructions: string[];
+  figJamFileId?: string; // Added for FigJam integration
 }
 
 // Sample data - this would typically come from a database
@@ -37,7 +40,8 @@ const challengeDetails: Record<string, ChallengeDetails> = {
       "Sketch the main screens of your new design",
       "Focus on simplifying the process for new users",
       "Consider accessibility in your design"
-    ]
+    ],
+    figJamFileId: "demo123456789" // Example file ID, should be replaced with actual FigJam file ID
   },
   "airbnb-1": {
     id: "airbnb-1",
@@ -49,7 +53,8 @@ const challengeDetails: Record<string, ChallengeDetails> = {
       "Identify key pain points for hosts",
       "Sketch your solution's main flows",
       "Consider how this integrates with the existing platform"
-    ]
+    ],
+    figJamFileId: "demo987654321" // Example file ID, should be replaced with actual FigJam file ID
   },
   "meta-1": {
     id: "meta-1",
@@ -61,7 +66,8 @@ const challengeDetails: Record<string, ChallengeDetails> = {
       "Sketch new interaction models",
       "Consider both verbal and non-verbal communication",
       "Think about how to make interactions feel natural"
-    ]
+    ],
+    figJamFileId: "demo456789123" // Example file ID, should be replaced with actual FigJam file ID
   },
   "uber-2": {
     id: "uber-2",
@@ -73,7 +79,8 @@ const challengeDetails: Record<string, ChallengeDetails> = {
       "Sketch solutions that address these issues",
       "Consider how your solutions benefit all users",
       "Think about implementation feasibility"
-    ]
+    ],
+    figJamFileId: "demo789123456" // Example file ID, should be replaced with actual FigJam file ID
   },
   "airbnb-2": {
     id: "airbnb-2",
@@ -85,7 +92,8 @@ const challengeDetails: Record<string, ChallengeDetails> = {
       "Identify steps that cause user drop-off",
       "Sketch a streamlined flow",
       "Consider how to maintain necessary information gathering"
-    ]
+    ],
+    figJamFileId: "demo234567891" // Example file ID, should be replaced with actual FigJam file ID
   },
   "meta-2": {
     id: "meta-2",
@@ -97,7 +105,8 @@ const challengeDetails: Record<string, ChallengeDetails> = {
       "Sketch how components adapt across platforms",
       "Consider the unique constraints of each platform",
       "Demonstrate how your system maintains brand consistency"
-    ]
+    ],
+    figJamFileId: "demo567891234" // Example file ID, should be replaced with actual FigJam file ID
   }
 };
 
@@ -110,6 +119,11 @@ const Whiteboard: React.FC = () => {
   const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "select" | "text">("pen");
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  
+  // FigJam-specific state
+  const [figmaToken, setFigmaToken] = useState<string | null>(localStorage.getItem("figma_token"));
+  const [showFigmaAuth, setShowFigmaAuth] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
   
   // Evaluation state
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -125,6 +139,26 @@ const Whiteboard: React.FC = () => {
       navigate("/challenges");
     }
   }, [challengeId, navigate]);
+
+  // Check if FigJam is ready to use
+  useEffect(() => {
+    // If we have a challenge but no Figma token, prompt for authentication
+    if (activeChallenge && !figmaToken) {
+      setShowFigmaAuth(true);
+    }
+  }, [activeChallenge, figmaToken]);
+
+  const handleFigmaAuth = (token: string) => {
+    setFigmaToken(token);
+    localStorage.setItem("figma_token", token);
+    toast.success("Connected to Figma!");
+  };
+
+  const handleFigJamError = (error: Error) => {
+    console.error("FigJam error:", error);
+    toast.error("Failed to load FigJam. Using fallback whiteboard.");
+    setUseFallback(true);
+  };
 
   const addStickyNote = () => {
     if (!newNoteText.trim()) return;
@@ -218,6 +252,33 @@ const Whiteboard: React.FC = () => {
     setShowResults(false);
   };
 
+  const renderWhiteboardArea = () => {
+    // If the challenge has a FigJam file ID and we're not using fallback
+    if (activeChallenge?.figJamFileId && !useFallback) {
+      return (
+        <FigJamEmbed
+          fileId={activeChallenge.figJamFileId}
+          accessToken={figmaToken || undefined}
+          onError={handleFigJamError}
+          className="w-full h-full"
+        />
+      );
+    }
+    
+    // Otherwise use the fallback whiteboard
+    return (
+      <FallbackWhiteboard
+        activeTool={activeTool}
+        setActiveTool={setActiveTool}
+        notes={notes}
+        updateNotePosition={updateNotePosition}
+        updateNoteText={updateNoteText}
+        deleteNote={deleteNote}
+        onCanvasRef={handleCanvasRef}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
       {/* Header */}
@@ -282,23 +343,7 @@ const Whiteboard: React.FC = () => {
 
         {/* Whiteboard area */}
         <div className="flex-1 relative overflow-hidden" ref={containerRef}>
-          <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
-          
-          <WhiteboardCanvas activeTool={activeTool} onCanvasRef={handleCanvasRef} />
-          
-          {/* Sticky notes layer */}
-          {notes.map((note) => (
-            <StickyNote
-              key={note.id}
-              id={note.id}
-              text={note.text}
-              position={note.position}
-              color={note.color}
-              updatePosition={updateNotePosition}
-              updateText={updateNoteText}
-              deleteNote={deleteNote}
-            />
-          ))}
+          {renderWhiteboardArea()}
         </div>
       </div>
 
@@ -309,6 +354,13 @@ const Whiteboard: React.FC = () => {
         score={evaluationScore}
         feedback={evaluationFeedback}
         isLoading={isEvaluating}
+      />
+
+      {/* Figma Auth Dialog */}
+      <FigmaAuth
+        isOpen={showFigmaAuth}
+        onClose={() => setShowFigmaAuth(false)}
+        onAuth={handleFigmaAuth}
       />
     </div>
   );
