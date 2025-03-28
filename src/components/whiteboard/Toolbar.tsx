@@ -1,11 +1,11 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Pencil, Eraser, MousePointer, Type } from "lucide-react";
+import { Eraser, MousePointer, Type, ArrowRight, Circle, Square } from "lucide-react";
 
 interface ToolbarProps {
-  activeTool: "pen" | "eraser" | "select" | "text";
-  setActiveTool: (tool: "pen" | "eraser" | "select" | "text") => void;
+  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
+  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square") => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool }) => {
@@ -14,11 +14,11 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool }) => {
       <Button
         variant="ghost"
         size="icon"
-        className={`rounded-md ${activeTool === "pen" ? "bg-gray-200" : ""}`}
-        onClick={() => setActiveTool("pen")}
-        title="Pen"
+        className={`rounded-md ${activeTool === "select" ? "bg-gray-200" : ""}`}
+        onClick={() => setActiveTool("select")}
+        title="Select"
       >
-        <Pencil size={20} />
+        <MousePointer size={20} />
       </Button>
       
       <Button
@@ -34,11 +34,31 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool }) => {
       <Button
         variant="ghost"
         size="icon"
-        className={`rounded-md ${activeTool === "select" ? "bg-gray-200" : ""}`}
-        onClick={() => setActiveTool("select")}
-        title="Select"
+        className={`rounded-md ${activeTool === "arrow" ? "bg-gray-200" : ""}`}
+        onClick={() => setActiveTool("arrow")}
+        title="Connect with Arrow"
       >
-        <MousePointer size={20} />
+        <ArrowRight size={20} />
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`rounded-md ${activeTool === "circle" ? "bg-gray-200" : ""}`}
+        onClick={() => setActiveTool("circle")}
+        title="Circle"
+      >
+        <Circle size={20} />
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`rounded-md ${activeTool === "square" ? "bg-gray-200" : ""}`}
+        onClick={() => setActiveTool("square")}
+        title="Square"
+      >
+        <Square size={20} />
       </Button>
       
       <Button

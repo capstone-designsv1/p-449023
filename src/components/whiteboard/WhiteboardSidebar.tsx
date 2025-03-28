@@ -34,7 +34,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   isEvaluating,
 }) => {
   return (
-    <div className="w-80 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
+    <div className="w-96 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
       {/* Challenge Brief Section */}
       <div className="mb-4">
         <h2 className="text-lg font-semibold mb-2">Challenge Brief</h2>

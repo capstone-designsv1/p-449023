@@ -2,20 +2,25 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Send, Mic } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isSending: boolean;
   inputText?: string;
   setInputText?: (text: string) => void;
+  isVoiceMode?: boolean;
+  toggleVoiceMode?: () => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({ 
   onSendMessage, 
   isSending,
   inputText,
-  setInputText
+  setInputText,
+  isVoiceMode,
+  toggleVoiceMode
 }) => {
   const [newMessage, setNewMessage] = useState("");
   
@@ -57,14 +62,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
           }
         }}
       />
-      <Button
-        onClick={handleSend}
-        size="icon"
-        disabled={isSending}
-        className="self-end bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
-      >
-        <Send className="h-4 w-4" />
-      </Button>
+      <div className="flex flex-col gap-2 self-end">
+        {toggleVoiceMode && (
+          <Button
+            onClick={toggleVoiceMode}
+            size="icon"
+            variant="outline"
+            className={cn(
+              "transition-colors",
+              isVoiceMode && "bg-green-100 text-green-700 border-green-300"
+            )}
+            title={isVoiceMode ? "Disable voice mode" : "Enable voice mode"}
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          onClick={handleSend}
+          size="icon"
+          disabled={isSending || !newMessage.trim()}
+          className="bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };
