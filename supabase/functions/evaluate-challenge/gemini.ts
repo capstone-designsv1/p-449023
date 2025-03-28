@@ -11,7 +11,7 @@ export async function callGeminiAPI(prompt: string): Promise<EvaluationResult> {
     throw new Error("GEMINI_API_KEY is not set");
   }
   
-  // Call Gemini API
+  // Call Gemini API with enhanced parameters for better instruction following
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: 'POST',
     headers: {
@@ -26,10 +26,10 @@ export async function callGeminiAPI(prompt: string): Promise<EvaluationResult> {
         }
       ],
       generationConfig: {
-        temperature: 0.7,
-        topP: 0.8,
+        temperature: 0.6, // Slightly reduced temperature for more consistent output
+        topP: 0.85,
         topK: 40,
-        maxOutputTokens: 1024,
+        maxOutputTokens: 2048, // Increased token limit for more detailed feedback
       }
     })
   });
@@ -41,48 +41,92 @@ export async function callGeminiAPI(prompt: string): Promise<EvaluationResult> {
   const data = await response.json();
   const generatedText = data.candidates[0].content.parts[0].text;
 
-  // Default evaluation result
+  // Enhanced default evaluation result that follows our structure
   const defaultResult: EvaluationResult = {
     score: 65,
     feedback: "The candidate showed a reasonable understanding of the design challenge. " + 
               "There were some good initial ideas, but the solution could be more comprehensive. " +
               "Consider adding more user-centered design thinking and explaining your rationale more clearly.",
     strengths: [
-      "Shows good understanding of basic design concepts",
-      "Able to articulate ideas clearly",
-      "Demonstrated some user empathy"
+      "Shows good understanding of basic design concepts and applies them consistently throughout the solution, which helps maintain coherence.",
+      "Able to articulate ideas clearly with good use of examples to illustrate points, making your solution easier to understand.",
+      "Demonstrated user empathy by considering different user personas and their unique needs, strengthening the user-centered approach."
     ],
     improvements: [
-      "Could explore a wider range of solutions",
-      "Need more focus on edge cases",
-      "Could provide more justification for design decisions"
+      "Try reframing the problem statement as 'How might we optimize the checkout experience to reduce cart abandonment?' instead of the current generic framing.",
+      "When discussing technical constraints, specify actual limitations like 'Must work offline with data synchronization when connection is restored' rather than just mentioning technical feasibility.",
+      "Include acceptance criteria for features, such as 'Users should complete checkout in under 30 seconds' to make implementation goals clearer."
+    ],
+    weaknesses: {
+      mainWeakness: "The solution lacks sufficient validation methods and metrics for success",
+      improvementSteps: [
+        "Define 2-3 key metrics that would indicate success (e.g., reduced drop-off rate, increased conversion)",
+        "Suggest A/B testing methodology for critical features with specific test groups",
+        "Include a timeline for gathering user feedback and iterating on the design"
+      ]
+    },
+    nextSteps: [
+      "Practice the 5-Why technique on your primary user problem to reach deeper insights",
+      "Create a competitive analysis of 3-4 similar products to identify gaps and opportunities"
     ],
     actionable: [
-      "Practice articulating your design process more clearly",
-      "Consider user needs more deeply in your solutions",
-      "Sketch multiple alternatives before settling on a final solution"
+      "Break down your design process into distinct phases with clear deliverables for each",
+      "Create user flows that account for error states and edge cases",
+      "Develop low-fidelity wireframes that focus on information architecture before visual design",
+      "Practice explaining your design decisions using the format: problem → approach → rationale → outcome"
     ]
   };
   
-  // Try to extract JSON from the response
-  let jsonMatch = generatedText.match(/\{[\s\S]*\}/);
-  
-  if (jsonMatch) {
-    try {
-      const parsedResult = JSON.parse(jsonMatch[0]);
-      
-      // Ensure all expected properties exist in the parsed result
-      return {
-        score: parsedResult.score || defaultResult.score,
-        feedback: parsedResult.feedback || defaultResult.feedback,
-        strengths: parsedResult.strengths || defaultResult.strengths,
-        improvements: parsedResult.improvements || defaultResult.improvements,
-        actionable: parsedResult.actionable || defaultResult.actionable
-      };
-    } catch (e) {
-      console.error("Error parsing JSON from Gemini response:", e);
-      // Using the default values defined above
+  // Try to extract JSON from the response with improved parsing
+  try {
+    // First try to find JSON object using regex
+    let jsonMatch = generatedText.match(/\{[\s\S]*\}/);
+    let parsedResult;
+    
+    if (jsonMatch) {
+      try {
+        parsedResult = JSON.parse(jsonMatch[0]);
+      } catch (e) {
+        console.error("Error parsing JSON directly from response:", e);
+        // Try to clean the text before parsing
+        const cleanedJson = jsonMatch[0]
+          .replace(/(\r\n|\n|\r)/gm, " ")
+          .replace(/\s+/g, " ")
+          .replace(/\\"/g, '"')
+          .replace(/\\'/g, "'");
+        
+        try {
+          parsedResult = JSON.parse(cleanedJson);
+        } catch (e2) {
+          console.error("Error parsing cleaned JSON:", e2);
+          // Fall back to default
+        }
+      }
     }
+    
+    // If we successfully parsed the result
+    if (parsedResult) {
+      // Ensure all expected properties exist in the parsed result with validation
+      const result: EvaluationResult = {
+        score: typeof parsedResult.score === 'number' ? parsedResult.score : defaultResult.score,
+        feedback: typeof parsedResult.feedback === 'string' ? parsedResult.feedback : defaultResult.feedback,
+        strengths: Array.isArray(parsedResult.strengths) ? parsedResult.strengths : defaultResult.strengths,
+        improvements: Array.isArray(parsedResult.improvements) ? parsedResult.improvements : defaultResult.improvements,
+        weaknesses: parsedResult.weaknesses && typeof parsedResult.weaknesses === 'object' ? {
+          mainWeakness: typeof parsedResult.weaknesses.mainWeakness === 'string' ? 
+            parsedResult.weaknesses.mainWeakness : defaultResult.weaknesses.mainWeakness,
+          improvementSteps: Array.isArray(parsedResult.weaknesses.improvementSteps) ? 
+            parsedResult.weaknesses.improvementSteps : defaultResult.weaknesses.improvementSteps
+        } : defaultResult.weaknesses,
+        nextSteps: Array.isArray(parsedResult.nextSteps) ? parsedResult.nextSteps : defaultResult.nextSteps,
+        actionable: Array.isArray(parsedResult.actionable) ? parsedResult.actionable : defaultResult.actionable
+      };
+      
+      return result;
+    }
+  } catch (e) {
+    console.error("Error processing Gemini response:", e);
+    // Using the default values defined above
   }
   
   return defaultResult;

@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useChallengeContext } from "@/context/ChallengeContext";
+import { Separator } from "@/components/ui/separator";
+import { CheckCircle2, AlertCircle, ArrowRightCircle, Lightbulb } from "lucide-react";
 
 interface EvaluationResultsProps {
   isOpen: boolean;
@@ -21,7 +23,13 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
   isLoading,
 }) => {
   const navigate = useNavigate();
-  const { evaluationStrengths, evaluationImprovements, evaluationActionable } = useChallengeContext();
+  const { 
+    evaluationStrengths, 
+    evaluationImprovements, 
+    evaluationActionable,
+    evaluationWeaknesses, 
+    evaluationNextSteps 
+  } = useChallengeContext();
 
   const handleClose = () => {
     onClose();
@@ -53,28 +61,52 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
             </div>
 
             {/* Feedback */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Overall Feedback</h3>
+            <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold">Overall Assessment</h3>
               <p className="text-gray-700 whitespace-pre-line">{feedback}</p>
             </div>
 
             {/* Strengths */}
             {evaluationStrengths && evaluationStrengths.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Strengths</h3>
-                <ul className="list-disc pl-5 space-y-1">
+              <div className="space-y-2 border-l-4 border-green-400 pl-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                  <h3 className="text-lg font-semibold">Key Strengths</h3>
+                </div>
+                <ul className="space-y-3">
                   {evaluationStrengths.map((strength, index) => (
-                    <li key={index} className="text-gray-700">{strength}</li>
+                    <li key={index} className="text-gray-700">
+                      <p>{strength}</p>
+                    </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {/* Primary Weakness with Steps */}
+            {evaluationWeaknesses && (
+              <div className="space-y-2 border-l-4 border-amber-400 pl-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <h3 className="text-lg font-semibold">Primary Area to Focus On</h3>
+                </div>
+                <p className="font-medium">{evaluationWeaknesses.mainWeakness}</p>
+                <div className="mt-2">
+                  <p className="text-sm font-medium text-gray-600 mb-1">How to improve:</p>
+                  <ol className="list-decimal ml-5 space-y-1">
+                    {evaluationWeaknesses.improvementSteps.map((step, index) => (
+                      <li key={index} className="text-gray-700">{step}</li>
+                    ))}
+                  </ol>
+                </div>
               </div>
             )}
 
             {/* Areas for Improvement */}
             {evaluationImprovements && evaluationImprovements.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Areas for Improvement</h3>
-                <ul className="list-disc pl-5 space-y-1">
+                <h3 className="text-lg font-semibold">Other Areas for Improvement</h3>
+                <ul className="list-disc pl-5 space-y-3">
                   {evaluationImprovements.map((improvement, index) => (
                     <li key={index} className="text-gray-700">{improvement}</li>
                   ))}
@@ -82,11 +114,32 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
               </div>
             )}
 
-            {/* Actionable Feedback */}
+            {/* Next Steps Section */}
+            {evaluationNextSteps && evaluationNextSteps.length > 0 && (
+              <div className="space-y-2 border-l-4 border-blue-400 pl-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <ArrowRightCircle className="h-5 w-5 text-blue-500" />
+                  <h3 className="text-lg font-semibold">Next Steps</h3>
+                </div>
+                <ul className="space-y-3">
+                  {evaluationNextSteps.map((step, index) => (
+                    <li key={index} className="text-gray-700 flex items-start gap-2">
+                      <span className="font-medium text-blue-700 mt-0.5">#{index + 1}:</span>
+                      <p>{step}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Actionable Tips */}
             {evaluationActionable && evaluationActionable.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Actionable Steps</h3>
-                <ul className="list-disc pl-5 space-y-1">
+              <div className="space-y-2 border-l-4 border-purple-400 pl-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb className="h-5 w-5 text-purple-500" />
+                  <h3 className="text-lg font-semibold">Actionable Tips</h3>
+                </div>
+                <ul className="space-y-2">
                   {evaluationActionable.map((action, index) => (
                     <li key={index} className="text-gray-700">{action}</li>
                   ))}
@@ -94,7 +147,9 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
               </div>
             )}
 
-            <div className="flex justify-end pt-4">
+            <Separator />
+
+            <div className="flex justify-end pt-2">
               <Button
                 onClick={handleClose}
                 className="bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"

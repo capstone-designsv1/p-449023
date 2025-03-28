@@ -1,4 +1,19 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  Dispatch,
+  SetStateAction,
+} from "react";
+
+export interface ChallengeDetails {
+  id: string;
+  title: string;
+  description: string;
+  company: string;
+  industry?: string;
+}
 
 interface StickyNoteType {
   id: string;
@@ -14,20 +29,13 @@ interface ChatMessage {
   timestamp: Date;
 }
 
-export interface ChallengeDetails {
-  id: string;
-  title: string;
-  company: string;
-  description: string;
-  instructions: string[];
-  industry?: string; // Added industry field
-}
-
 interface ChallengeContextType {
   activeChallenge: ChallengeDetails | null;
   setActiveChallenge: React.Dispatch<React.SetStateAction<ChallengeDetails | null>>;
   notes: StickyNoteType[];
   setNotes: React.Dispatch<React.SetStateAction<StickyNoteType[]>>;
+  chatHistory: ChatMessage[];
+  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   isEvaluating: boolean;
   setIsEvaluating: React.Dispatch<React.SetStateAction<boolean>>;
   showResults: boolean;
@@ -36,34 +44,60 @@ interface ChallengeContextType {
   setEvaluationScore: React.Dispatch<React.SetStateAction<number | null>>;
   evaluationFeedback: string | null;
   setEvaluationFeedback: React.Dispatch<React.SetStateAction<string | null>>;
-  chatHistory: ChatMessage[];
-  setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
-  clearChatHistory: () => void;
   evaluationStrengths: string[];
   setEvaluationStrengths: React.Dispatch<React.SetStateAction<string[]>>;
   evaluationImprovements: string[];
   setEvaluationImprovements: React.Dispatch<React.SetStateAction<string[]>>;
   evaluationActionable: string[];
   setEvaluationActionable: React.Dispatch<React.SetStateAction<string[]>>;
+  
+  // New fields for enhanced evaluation
+  evaluationWeaknesses: {
+    mainWeakness: string;
+    improvementSteps: string[];
+  } | null;
+  setEvaluationWeaknesses: React.Dispatch<React.SetStateAction<{
+    mainWeakness: string;
+    improvementSteps: string[];
+  } | null>>;
+  evaluationNextSteps: string[];
+  setEvaluationNextSteps: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const ChallengeContext = createContext<ChallengeContextType | undefined>(undefined);
+const ChallengeContext = createContext<ChallengeContextType | undefined>(
+  undefined
+);
 
-export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [activeChallenge, setActiveChallenge] = useState<ChallengeDetails | null>(null);
+export function useChallengeContext() {
+  const context = useContext(ChallengeContext);
+  if (!context) {
+    throw new Error(
+      "useChallengeContext must be used within a ChallengeProvider"
+    );
+  }
+  return context;
+}
+
+export function ChallengeProvider({ children }: { children: React.ReactNode }) {
+  const [activeChallenge, setActiveChallenge] =
+    useState<ChallengeDetails | null>(null);
   const [notes, setNotes] = useState<StickyNoteType[]>([]);
-  const [isEvaluating, setIsEvaluating] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [evaluationScore, setEvaluationScore] = useState<number | null>(null);
-  const [evaluationFeedback, setEvaluationFeedback] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [isEvaluating, setIsEvaluating] = useState<boolean>(false);
+  const [showResults, setShowResults] = useState<boolean>(false);
+  const [evaluationScore, setEvaluationScore] = useState<number | null>(null);
+  const [evaluationFeedback, setEvaluationFeedback] =
+    useState<string | null>(null);
   const [evaluationStrengths, setEvaluationStrengths] = useState<string[]>([]);
   const [evaluationImprovements, setEvaluationImprovements] = useState<string[]>([]);
   const [evaluationActionable, setEvaluationActionable] = useState<string[]>([]);
-
-  const clearChatHistory = () => {
-    setChatHistory([]);
-  };
+  
+  // New state for enhanced evaluation
+  const [evaluationWeaknesses, setEvaluationWeaknesses] = useState<{
+    mainWeakness: string;
+    improvementSteps: string[];
+  } | null>(null);
+  const [evaluationNextSteps, setEvaluationNextSteps] = useState<string[]>([]);
 
   return (
     <ChallengeContext.Provider
@@ -72,6 +106,8 @@ export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children 
         setActiveChallenge,
         notes,
         setNotes,
+        chatHistory,
+        setChatHistory,
         isEvaluating,
         setIsEvaluating,
         showResults,
@@ -80,26 +116,21 @@ export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children 
         setEvaluationScore,
         evaluationFeedback,
         setEvaluationFeedback,
-        chatHistory,
-        setChatHistory,
-        clearChatHistory,
         evaluationStrengths,
         setEvaluationStrengths,
         evaluationImprovements,
         setEvaluationImprovements,
         evaluationActionable,
         setEvaluationActionable,
+        
+        // Add new evaluation fields
+        evaluationWeaknesses,
+        setEvaluationWeaknesses,
+        evaluationNextSteps,
+        setEvaluationNextSteps
       }}
     >
       {children}
     </ChallengeContext.Provider>
   );
-};
-
-export const useChallengeContext = () => {
-  const context = useContext(ChallengeContext);
-  if (context === undefined) {
-    throw new Error("useChallengeContext must be used within a ChallengeProvider");
-  }
-  return context;
-};
+}

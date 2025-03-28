@@ -21,7 +21,8 @@ export const useEvaluation = () => {
     chatHistory,
     isEvaluating, setIsEvaluating,
     setShowResults, setEvaluationScore, setEvaluationFeedback,
-    setEvaluationStrengths, setEvaluationImprovements, setEvaluationActionable
+    setEvaluationStrengths, setEvaluationImprovements, setEvaluationActionable,
+    setEvaluationWeaknesses, setEvaluationNextSteps
   } = useChallengeContext();
 
   const handleSubmitForEvaluation = async (data: { finalAnswer?: string, chatHistory?: ChatMessage[] }, getCanvasData: () => string) => {
@@ -50,12 +51,30 @@ export const useEvaluation = () => {
         throw new Error(response.error.message);
       }
       
-      const { score, feedback, strengths, improvements, actionable } = response.data;
+      const { 
+        score, 
+        feedback, 
+        strengths, 
+        improvements, 
+        actionable, 
+        weaknesses, 
+        nextSteps 
+      } = response.data;
+      
       setEvaluationScore(score);
       setEvaluationFeedback(feedback);
       setEvaluationStrengths(strengths || []);
       setEvaluationImprovements(improvements || []);
       setEvaluationActionable(actionable || []);
+      
+      // Set new evaluation fields
+      if (weaknesses) {
+        setEvaluationWeaknesses(weaknesses);
+      }
+      
+      if (nextSteps) {
+        setEvaluationNextSteps(nextSteps);
+      }
       
       toast.success("Challenge evaluation completed!");
     } catch (error) {

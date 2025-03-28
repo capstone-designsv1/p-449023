@@ -27,4 +27,9 @@ export interface EvaluationResult {
   strengths: string[];
   improvements: string[];
   actionable: string[];
+  weaknesses: {
+    mainWeakness: string;
+    improvementSteps: string[];
+  };
+  nextSteps: string[];
 }
