@@ -17,7 +17,9 @@ const WhiteboardContent: React.FC = () => {
     activeTool, setActiveTool,
     updateNotePosition, updateNoteText, deleteNote,
     handleBackToList, handleSubmitForEvaluation,
-    handleCanvasRef, handleCloseResults, initializeChallenge
+    handleCanvasRef, handleCloseResults, initializeChallenge,
+    shapes, updateShapePosition, deleteShape,
+    arrows, updateArrow, addArrow, deleteArrow
   } = useWhiteboard();
 
   useEffect(() => {
@@ -55,6 +57,13 @@ const WhiteboardContent: React.FC = () => {
           updateNoteText={updateNoteText}
           deleteNote={deleteNote}
           onCanvasRef={handleCanvasRef}
+          shapes={shapes}
+          updateShapePosition={updateShapePosition}
+          deleteShape={deleteShape}
+          arrows={arrows}
+          updateArrow={updateArrow}
+          addArrow={addArrow}
+          deleteArrow={deleteArrow}
         />
       </div>
 

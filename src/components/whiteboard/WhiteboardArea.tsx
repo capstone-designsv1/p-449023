@@ -38,13 +38,13 @@ interface WhiteboardAreaProps {
   updateNoteText: (id: string, text: string) => void;
   deleteNote: (id: string) => void;
   onCanvasRef: (ref: HTMLCanvasElement | null) => void;
-  shapes: ShapeType[];
-  updateShapePosition: (id: string, position: { x: number; y: number }) => void;
-  deleteShape: (id: string) => void;
-  arrows: ArrowType[];
-  updateArrow: (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
-  addArrow: (startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
-  deleteArrow: (id: string) => void;
+  shapes?: ShapeType[];
+  updateShapePosition?: (id: string, position: { x: number; y: number }) => void;
+  deleteShape?: (id: string) => void;
+  arrows?: ArrowType[];
+  updateArrow?: (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
+  addArrow?: (startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
+  deleteArrow?: (id: string) => void;
 }
 
 const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
@@ -55,13 +55,13 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   updateNoteText,
   deleteNote,
   onCanvasRef,
-  shapes,
-  updateShapePosition,
-  deleteShape,
-  arrows,
-  updateArrow,
-  addArrow,
-  deleteArrow,
+  shapes = [],
+  updateShapePosition = () => {},
+  deleteShape = () => {},
+  arrows = [],
+  updateArrow = () => {},
+  addArrow = () => {},
+  deleteArrow = () => {},
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawingArrow, setIsDrawingArrow] = useState(false);

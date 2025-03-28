@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface WhiteboardCanvasProps {
-  activeTool: "pen" | "eraser" | "select" | "text";
+  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
   onCanvasRef?: (ref: HTMLCanvasElement | null) => void;
 }
 
@@ -62,17 +62,14 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanva
   useEffect(() => {
     if (!context) return;
     
-    if (activeTool === "pen") {
-      context.strokeStyle = "#000000";
-      context.lineWidth = 2;
-    } else if (activeTool === "eraser") {
+    if (activeTool === "eraser") {
       context.strokeStyle = "#ffffff";
       context.lineWidth = 20;
     }
   }, [activeTool, context]);
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (activeTool !== "pen" && activeTool !== "eraser") return;
+    if (activeTool !== "eraser") return;
     
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -88,7 +85,7 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanva
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !context || (activeTool !== "pen" && activeTool !== "eraser")) return;
+    if (!isDrawing || !context || activeTool !== "eraser") return;
     
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;

@@ -13,6 +13,23 @@ interface ChatMessage {
   timestamp: Date;
 }
 
+interface ShapeType {
+  id: string;
+  type: "circle" | "square";
+  position: { x: number; y: number };
+  color: string;
+  size: number;
+}
+
+interface ArrowType {
+  id: string;
+  startPoint: { x: number; y: number };
+  endPoint: { x: number; y: number };
+  color: string;
+  startElementId?: string;
+  endElementId?: string;
+}
+
 export const useWhiteboard = () => {
   const { challengeId } = useParams<{ challengeId: string }>();
   const navigate = useNavigate();
@@ -24,8 +41,10 @@ export const useWhiteboard = () => {
     setEvaluationStrengths, setEvaluationImprovements, setEvaluationActionable
   } = useChallengeContext();
   
-  const [activeTool, setActiveTool] = useState<"pen" | "eraser" | "select" | "text">("pen");
+  const [activeTool, setActiveTool] = useState<"eraser" | "select" | "text" | "arrow" | "circle" | "square">("select");
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [shapes, setShapes] = useState<ShapeType[]>([]);
+  const [arrows, setArrows] = useState<ArrowType[]>([]);
 
   const updateNotePosition = (id: string, position: { x: number; y: number }) => {
     useChallengeContext().setNotes(notes.map(note => 
@@ -42,6 +61,38 @@ export const useWhiteboard = () => {
   const deleteNote = (id: string) => {
     useChallengeContext().setNotes(notes.filter(note => note.id !== id));
     toast.success("Sticky note removed");
+  };
+
+  const updateShapePosition = (id: string, position: { x: number; y: number }) => {
+    setShapes(shapes.map(shape => 
+      shape.id === id ? { ...shape, position } : shape
+    ));
+  };
+
+  const deleteShape = (id: string) => {
+    setShapes(shapes.filter(shape => shape.id !== id));
+    toast.success("Shape removed");
+  };
+
+  const addArrow = (startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => {
+    const newArrow: ArrowType = {
+      id: `arrow-${Date.now()}`,
+      startPoint,
+      endPoint,
+      color: "#000000",
+    };
+    setArrows([...arrows, newArrow]);
+  };
+
+  const updateArrow = (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => {
+    setArrows(arrows.map(arrow => 
+      arrow.id === id ? { ...arrow, startPoint, endPoint } : arrow
+    ));
+  };
+
+  const deleteArrow = (id: string) => {
+    setArrows(arrows.filter(arrow => arrow.id !== id));
+    toast.success("Arrow removed");
   };
 
   const handleBackToList = () => {
@@ -172,6 +223,13 @@ export const useWhiteboard = () => {
     handleCloseResults,
     initializeChallenge,
     activeChallenge,
-    isEvaluating
+    isEvaluating,
+    shapes,
+    updateShapePosition,
+    deleteShape,
+    arrows,
+    updateArrow,
+    addArrow,
+    deleteArrow
   };
 };
