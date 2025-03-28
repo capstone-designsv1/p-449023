@@ -20,7 +20,15 @@ export const useWhiteboard = () => {
   const { handleBackToList, initializeChallenge } = useChallengeInitialization();
 
   useEffect(() => {
-    initializeChallenge();
+    const loadChallenge = async () => {
+      try {
+        await initializeChallenge();
+      } catch (error) {
+        console.error("Error loading challenge:", error);
+      }
+    };
+    
+    loadChallenge();
   }, []);
 
   return {

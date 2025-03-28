@@ -32,16 +32,17 @@ export const useChallengeGenerator = ({
       // Use cached challenge if available and not forcing refresh
       if (cachedChallenge && !forceRefresh) {
         try {
-          const parsedChallenge = JSON.parse(cachedChallenge);
+          const parsedCache = JSON.parse(cachedChallenge);
           // Only use cache if it's less than 1 hour old
-          const cacheTime = new Date(parsedChallenge.cachedAt);
+          const cacheTime = new Date(parsedCache.cachedAt);
           const now = new Date();
           const cacheAgeMs = now.getTime() - cacheTime.getTime();
           const cacheAgeHours = cacheAgeMs / (1000 * 60 * 60);
           
-          if (cacheAgeHours < 1) {
+          if (cacheAgeHours < 1 && parsedCache.challenge) {
             console.log("Using cached challenge");
-            return parsedChallenge.challenge;
+            setIsLoading(false);
+            return parsedCache.challenge;
           }
         } catch (e) {
           console.error("Error parsing cached challenge:", e);
@@ -62,8 +63,10 @@ export const useChallengeGenerator = ({
         throw new Error(response.error.message || "Failed to generate challenge");
       }
 
-      if (!response.data) {
-        throw new Error("No data returned from challenge generator");
+      // Validate the response data
+      if (!response.data || !response.data.id || !response.data.title) {
+        console.error("Invalid challenge data received:", response.data);
+        throw new Error("Received invalid challenge data from the server");
       }
 
       const generatedChallenge: ChallengeDetails = response.data;
@@ -76,6 +79,7 @@ export const useChallengeGenerator = ({
 
       // Reset retry count on success
       setRetryCount(0);
+      setIsLoading(false);
       return generatedChallenge;
     } catch (err) {
       console.error("Error generating challenge:", err);
@@ -88,14 +92,14 @@ export const useChallengeGenerator = ({
         
         // Wait a bit before retrying
         await new Promise(resolve => setTimeout(resolve, 1500));
+        setIsLoading(false);
         return generateChallenge();
       }
       
       setError(errorMessage);
       toast.error(`Failed to generate challenge after ${MAX_RETRIES} attempts. Please try again later.`);
-      return null;
-    } finally {
       setIsLoading(false);
+      return null;
     }
   };
 

@@ -13,8 +13,13 @@ export const useChallengeInitialization = () => {
     navigate("/challenges");
   };
   
-  const initializeChallenge = () => {
-    if (challengeId) {
+  const initializeChallenge = async () => {
+    if (!challengeId) {
+      navigate("/challenges");
+      return;
+    }
+
+    try {
       // Try to get the challenge from sessionStorage first
       const storedChallenge = sessionStorage.getItem('currentChallenge');
       
@@ -34,37 +39,41 @@ export const useChallengeInitialization = () => {
       }
       
       // If we don't have a stored challenge (or wrong ID), load it via the API
-      try {
-        // Use the ID from the URL as a seed for generating a challenge
-        const [level, industry] = challengeId.split('-');
-        const designLevel = level === 'junior' ? 'Junior' : level === 'lead' ? 'Lead' : 'Senior';
-        
-        // Generate a new challenge via the API
-        supabase.functions.invoke('generate-challenge', {
-          body: {
-            designLevel,
-            industry: industry.charAt(0).toUpperCase() + industry.slice(1), // Capitalize first letter
-          }
-        }).then(response => {
-          if (response.error) {
-            throw new Error(response.error.message);
-          }
-          
-          // Use the generated challenge
-          const generatedChallenge = response.data;
-          setActiveChallenge(generatedChallenge);
-          clearChatHistory();
-          toast.success(`Challenge loaded: ${generatedChallenge.title}`);
-        }).catch(error => {
-          console.error("Error generating challenge:", error);
-          toast.error("Failed to load challenge. Redirecting to challenges page.");
-          navigate("/challenges");
-        });
-      } catch (error) {
-        console.error("Error initializing challenge:", error);
-        navigate("/challenges");
+      // Use the ID from the URL as a seed for generating a challenge
+      const [level, industry] = challengeId.split('-');
+      const designLevel = level === 'junior' ? 'Junior' : level === 'lead' ? 'Lead' : 'Senior';
+      
+      // Generate a new challenge via the API
+      const response = await supabase.functions.invoke('generate-challenge', {
+        body: {
+          designLevel,
+          industry: industry.charAt(0).toUpperCase() + industry.slice(1), // Capitalize first letter
+        }
+      });
+      
+      if (response.error) {
+        throw new Error(response.error.message);
       }
-    } else {
+      
+      // Use the generated challenge
+      const generatedChallenge = response.data;
+      
+      // Validate required fields are present in the response
+      if (!generatedChallenge || !generatedChallenge.id || !generatedChallenge.title) {
+        console.error("Invalid challenge data received:", generatedChallenge);
+        throw new Error("Received invalid challenge data from the server");
+      }
+      
+      // Save to session storage for future use
+      sessionStorage.setItem('currentChallenge', JSON.stringify(generatedChallenge));
+      
+      setActiveChallenge(generatedChallenge);
+      clearChatHistory();
+      toast.success(`Challenge loaded: ${generatedChallenge.title}`);
+      
+    } catch (error) {
+      console.error("Error initializing challenge:", error);
+      toast.error("Failed to load challenge. Redirecting to challenges page.");
       navigate("/challenges");
     }
   };

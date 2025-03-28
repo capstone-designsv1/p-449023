@@ -1,17 +1,20 @@
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
 import WhiteboardArea from "@/components/whiteboard/WhiteboardArea";
 import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const WhiteboardContent: React.FC = () => {
   const { 
     activeChallenge, notes, showResults, 
     evaluationScore, evaluationFeedback, isEvaluating 
   } = useChallengeContext();
+  
+  const [isLoading, setIsLoading] = useState(true);
   
   const {
     activeTool, setActiveTool,
@@ -23,13 +26,22 @@ const WhiteboardContent: React.FC = () => {
   } = useWhiteboard();
 
   useEffect(() => {
-    initializeChallenge();
-  }, []);
+    if (activeChallenge) {
+      setIsLoading(false);
+    }
+  }, [activeChallenge]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
       {/* Header */}
-      {activeChallenge && (
+      {isLoading ? (
+        <div className="bg-white border-b border-gray-200 p-4">
+          <div className="container mx-auto">
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-40" />
+          </div>
+        </div>
+      ) : activeChallenge && (
         <WhiteboardHeader 
           title={activeChallenge.title} 
           company={activeChallenge.company}
@@ -40,13 +52,22 @@ const WhiteboardContent: React.FC = () => {
       {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <WhiteboardSidebar 
-          description={activeChallenge?.description || ""}
-          notes={notes}
-          setNotes={useChallengeContext().setNotes}
-          onSubmitForEvaluation={handleSubmitForEvaluation}
-          isEvaluating={isEvaluating}
-        />
+        {isLoading ? (
+          <div className="w-96 border-r border-gray-200 bg-white p-4">
+            <Skeleton className="h-6 w-40 mb-2" />
+            <Skeleton className="h-32 w-full mb-4" />
+            <Skeleton className="h-6 w-40 mb-2" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        ) : (
+          <WhiteboardSidebar 
+            description={activeChallenge?.description || ""}
+            notes={notes}
+            setNotes={useChallengeContext().setNotes}
+            onSubmitForEvaluation={handleSubmitForEvaluation}
+            isEvaluating={isEvaluating}
+          />
+        )}
 
         {/* Whiteboard area */}
         <WhiteboardArea 
