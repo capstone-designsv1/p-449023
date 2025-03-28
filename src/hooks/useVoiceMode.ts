@@ -16,17 +16,19 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
   
   // Handlers for speech-to-text and text-to-speech events
   const handleTranscriptReady = (text: string) => {
+    console.log("Voice mode: Transcript ready", text);
     if (text.trim()) {
       onMessageReady(text);
     }
   };
   
   const handleSpeechStart = () => {
-    toast.info("AI is speaking...", { duration: 2000 });
+    console.log("Voice mode: AI speaking started");
+    toast.info("AI is speaking...");
   };
   
   const handleSpeechEnd = () => {
-    // Optional callback when speech ends
+    console.log("Voice mode: AI speaking ended");
   };
   
   // Initialize voice assistant with handlers
@@ -51,7 +53,9 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
   useEffect(() => {
     if (isVoiceMode && chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
+      // Only auto-speak new assistant messages
       if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
+        console.log("Voice mode: New assistant message detected, auto-speaking");
         lastAssistantMessageRef.current = lastMessage.content;
         speakText(lastMessage.content);
       }
@@ -65,7 +69,8 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(() => {
           setIsVoiceMode(true);
-          toast.success("Voice mode enabled", { duration: 2000 });
+          toast.success("Voice mode enabled");
+          console.log("Voice mode enabled");
         })
         .catch((err) => {
           console.error("Microphone permission denied:", err);
@@ -76,15 +81,18 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
       if (isListening) stopListening();
       if (isSpeaking) stopSpeaking();
       setIsVoiceMode(false);
-      toast.success("Voice mode disabled", { duration: 2000 });
+      toast.success("Voice mode disabled");
+      console.log("Voice mode disabled");
     }
   };
 
   // Toggle listening state
   const toggleListening = () => {
     if (isListening) {
+      console.log("Voice mode: Stopping listening");
       stopListening();
     } else {
+      console.log("Voice mode: Starting listening");
       startListening();
     }
   };
@@ -92,11 +100,13 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
   // Toggle speaking state
   const toggleSpeaking = () => {
     if (isSpeaking) {
+      console.log("Voice mode: Stopping speaking");
       stopSpeaking();
     } else if (chatHistory.length > 0) {
       // Find the last assistant message
       const lastAssistantMessage = [...chatHistory].reverse().find(msg => msg.role === 'assistant');
       if (lastAssistantMessage) {
+        console.log("Voice mode: Speaking last assistant message");
         speakText(lastAssistantMessage.content);
       }
     }
