@@ -1,215 +1,27 @@
 
-import { useState, useRef, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useEffect } from "react";
+import { useWhiteboardTools } from "./whiteboard/useWhiteboardTools";
+import { useNotes } from "./whiteboard/useNotes";
+import { useShapes } from "./whiteboard/useShapes";
+import { useArrows } from "./whiteboard/useArrows";
+import { useCanvas } from "./whiteboard/useCanvas";
+import { useEvaluation } from "./whiteboard/useEvaluation";
+import { useChallengeInitialization } from "./whiteboard/useChallengeInitialization";
 import { useChallengeContext } from "@/context/ChallengeContext";
-import { ChallengeDetails } from "@/context/ChallengeContext";
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
-
-interface ShapeType {
-  id: string;
-  type: "circle" | "square";
-  position: { x: number; y: number };
-  color: string;
-  size: number;
-}
-
-interface ArrowType {
-  id: string;
-  startPoint: { x: number; y: number };
-  endPoint: { x: number; y: number };
-  color: string;
-  startElementId?: string;
-  endElementId?: string;
-}
 
 export const useWhiteboard = () => {
-  const { challengeId } = useParams<{ challengeId: string }>();
-  const navigate = useNavigate();
-  const { 
-    activeChallenge, setActiveChallenge, 
-    notes, isEvaluating, setIsEvaluating,
-    setShowResults, setEvaluationScore, setEvaluationFeedback,
-    clearChatHistory, chatHistory,
-    setEvaluationStrengths, setEvaluationImprovements, setEvaluationActionable
-  } = useChallengeContext();
-  
-  const [activeTool, setActiveTool] = useState<"eraser" | "select" | "text" | "arrow" | "circle" | "square">("select");
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [shapes, setShapes] = useState<ShapeType[]>([]);
-  const [arrows, setArrows] = useState<ArrowType[]>([]);
+  const { activeChallenge } = useChallengeContext();
+  const { activeTool, setActiveTool } = useWhiteboardTools();
+  const { notes, updateNotePosition, updateNoteText, deleteNote } = useNotes();
+  const { shapes, updateShapePosition, deleteShape } = useShapes();
+  const { arrows, addArrow, updateArrow, deleteArrow } = useArrows();
+  const { handleCanvasRef, getCanvasData } = useCanvas();
+  const { isEvaluating, handleSubmitForEvaluation, handleCloseResults } = useEvaluation();
+  const { handleBackToList, initializeChallenge } = useChallengeInitialization();
 
-  const updateNotePosition = (id: string, position: { x: number; y: number }) => {
-    useChallengeContext().setNotes(notes.map(note => 
-      note.id === id ? { ...note, position } : note
-    ));
-  };
-
-  const updateNoteText = (id: string, text: string) => {
-    useChallengeContext().setNotes(notes.map(note => 
-      note.id === id ? { ...note, text } : note
-    ));
-  };
-
-  const deleteNote = (id: string) => {
-    useChallengeContext().setNotes(notes.filter(note => note.id !== id));
-    toast.success("Sticky note removed");
-  };
-
-  const updateShapePosition = (id: string, position: { x: number; y: number }) => {
-    setShapes(shapes.map(shape => 
-      shape.id === id ? { ...shape, position } : shape
-    ));
-  };
-
-  const deleteShape = (id: string) => {
-    setShapes(shapes.filter(shape => shape.id !== id));
-    toast.success("Shape removed");
-  };
-
-  const addArrow = (startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => {
-    const newArrow: ArrowType = {
-      id: `arrow-${Date.now()}`,
-      startPoint,
-      endPoint,
-      color: "#000000",
-    };
-    setArrows([...arrows, newArrow]);
-  };
-
-  const updateArrow = (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => {
-    setArrows(arrows.map(arrow => 
-      arrow.id === id ? { ...arrow, startPoint, endPoint } : arrow
-    ));
-  };
-
-  const deleteArrow = (id: string) => {
-    setArrows(arrows.filter(arrow => arrow.id !== id));
-    toast.success("Arrow removed");
-  };
-
-  const handleBackToList = () => {
-    navigate("/challenges");
-  };
-
-  const getCanvasData = (): string => {
-    if (!canvasRef.current) return "";
-    return canvasRef.current.toDataURL();
-  };
-
-  const handleSubmitForEvaluation = async (data: { finalAnswer?: string, chatHistory?: ChatMessage[] }) => {
-    if (!challengeId) return;
-    
-    setIsEvaluating(true);
-    setShowResults(true);
-    
-    try {
-      const canvasData = getCanvasData();
-      
-      const response = await supabase.functions.invoke('evaluate-challenge', {
-        body: {
-          submissionData: {
-            challengeId,
-            canvasData,
-            notes,
-            finalAnswer: data.finalAnswer,
-            chatHistory: data.chatHistory || chatHistory,
-            challengeDetails: activeChallenge // Pass the full challenge details for context
-          }
-        }
-      });
-      
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      
-      const { score, feedback, strengths, improvements, actionable } = response.data;
-      setEvaluationScore(score);
-      setEvaluationFeedback(feedback);
-      setEvaluationStrengths(strengths || []);
-      setEvaluationImprovements(improvements || []);
-      setEvaluationActionable(actionable || []);
-      
-      toast.success("Challenge evaluation completed!");
-    } catch (error) {
-      console.error("Evaluation error:", error);
-      toast.error("Failed to evaluate challenge. Please try again.");
-    } finally {
-      setIsEvaluating(false);
-    }
-  };
-
-  const handleCanvasRef = (ref: HTMLCanvasElement | null) => {
-    canvasRef.current = ref;
-  };
-
-  const handleCloseResults = () => {
-    setShowResults(false);
-    navigate("/challenges");
-  };
-
-  const initializeChallenge = () => {
-    if (challengeId) {
-      // Try to get the challenge from sessionStorage first
-      const storedChallenge = sessionStorage.getItem('currentChallenge');
-      
-      if (storedChallenge) {
-        try {
-          const parsedChallenge = JSON.parse(storedChallenge) as ChallengeDetails;
-          // Only use if IDs match
-          if (parsedChallenge.id === challengeId) {
-            setActiveChallenge(parsedChallenge);
-            clearChatHistory();
-            toast.success(`Challenge loaded: ${parsedChallenge.title}`);
-            return;
-          }
-        } catch (error) {
-          console.error("Error parsing stored challenge:", error);
-        }
-      }
-      
-      // If we don't have a stored challenge (or wrong ID), load it via the API
-      try {
-        // Use the ID from the URL as a seed for generating a challenge
-        const [level, industry] = challengeId.split('-');
-        const designLevel = level === 'junior' ? 'Junior' : level === 'lead' ? 'Lead' : 'Senior';
-        
-        // Generate a new challenge via the API
-        supabase.functions.invoke('generate-challenge', {
-          body: {
-            designLevel,
-            industry: industry.charAt(0).toUpperCase() + industry.slice(1), // Capitalize first letter
-          }
-        }).then(response => {
-          if (response.error) {
-            throw new Error(response.error.message);
-          }
-          
-          // Use the generated challenge
-          const generatedChallenge = response.data;
-          setActiveChallenge(generatedChallenge);
-          clearChatHistory();
-          toast.success(`Challenge loaded: ${generatedChallenge.title}`);
-        }).catch(error => {
-          console.error("Error generating challenge:", error);
-          toast.error("Failed to load challenge. Redirecting to challenges page.");
-          navigate("/challenges");
-        });
-      } catch (error) {
-        console.error("Error initializing challenge:", error);
-        navigate("/challenges");
-      }
-    } else {
-      navigate("/challenges");
-    }
-  };
+  useEffect(() => {
+    initializeChallenge();
+  }, []);
 
   return {
     activeTool,
@@ -218,12 +30,13 @@ export const useWhiteboard = () => {
     updateNoteText,
     deleteNote,
     handleBackToList,
-    handleSubmitForEvaluation,
+    handleSubmitForEvaluation: (data: any) => handleSubmitForEvaluation(data, getCanvasData),
     handleCanvasRef,
     handleCloseResults,
     initializeChallenge,
     activeChallenge,
     isEvaluating,
+    notes,
     shapes,
     updateShapePosition,
     deleteShape,
