@@ -1,17 +1,22 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useDrawingTools, DrawingPoint } from "@/hooks/whiteboard/useDrawingTools";
+import { useCanvasDrawing } from "@/hooks/whiteboard/useCanvasDrawing";
+import { useDrawingConfigurations } from "@/hooks/whiteboard/useDrawingConfigurations";
+import { WhiteboardTool } from "@/hooks/whiteboard/useWhiteboardTools";
 
 interface WhiteboardCanvasProps {
-  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
+  activeTool: WhiteboardTool;
   onCanvasRef?: (ref: HTMLCanvasElement | null) => void;
 }
 
 const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanvasRef }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
-  const [lastPosition, setLastPosition] = useState({ x: 0, y: 0 });
+  const { toolConfigurations, getToolConfiguration } = useDrawingConfigurations();
+  const { isDrawing, startDrawing, draw, stopDrawing, clearCanvas } = useDrawingTools(context);
+  const { startShape, previewShape, finishShape, drawingState } = useCanvasDrawing(context);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -62,62 +67,56 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanva
   useEffect(() => {
     if (!context) return;
     
-    if (activeTool === "eraser") {
-      context.strokeStyle = "#ffffff";
-      context.lineWidth = 20;
-    }
-  }, [activeTool, context]);
+    const config = getToolConfiguration(activeTool);
+    context.strokeStyle = config.strokeColor;
+    context.lineWidth = config.strokeWidth;
+    
+  }, [activeTool, context, getToolConfiguration]);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (activeTool !== "eraser") return;
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
+    
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
     
     // If double click with eraser tool, clear the entire canvas
     if (e.detail === 2 && activeTool === "eraser") {
-      clearCanvas();
+      clearCanvas(canvasRef.current);
       return;
     }
     
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    switch (activeTool) {
+      case "eraser":
+        startDrawing(e, canvasRef.current, activeTool);
+        break;
+      case "circle":
+      case "square":
+      case "arrow":
+        startShape(x, y, canvasRef.current);
+        break;
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current) return;
     
+    const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
-    context?.beginPath();
-    context?.moveTo(x, y);
-    
-    setIsDrawing(true);
-    setLastPosition({ x, y });
+    if (activeTool === "eraser") {
+      draw(e, canvasRef.current, activeTool);
+    } else if (["circle", "square", "arrow"].includes(activeTool) && drawingState.isDrawing) {
+      previewShape(x, y, activeTool, canvasRef.current);
+    }
   };
 
-  const clearCanvas = () => {
-    if (!canvasRef.current || !context) return;
-    
-    const canvas = canvasRef.current;
-    context.fillStyle = "#ffffff";
-    context.fillRect(0, 0, canvas.width, canvas.height);
-    toast.success("Canvas cleared");
-  };
-
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !context || activeTool !== "eraser") return;
-    
-    const rect = canvasRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    context.lineTo(x, y);
-    context.stroke();
-    
-    setLastPosition({ x, y });
-  };
-
-  const stopDrawing = () => {
-    if (isDrawing) {
-      context?.closePath();
-      setIsDrawing(false);
+  const handleMouseUp = () => {
+    if (activeTool === "eraser") {
+      stopDrawing();
+    } else if (["circle", "square", "arrow"].includes(activeTool)) {
+      finishShape();
     }
   };
 
@@ -125,10 +124,10 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanva
     <canvas
       ref={canvasRef}
       className="absolute inset-0 cursor-crosshair"
-      onMouseDown={startDrawing}
-      onMouseMove={draw}
-      onMouseUp={stopDrawing}
-      onMouseLeave={stopDrawing}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     />
   );
 };
