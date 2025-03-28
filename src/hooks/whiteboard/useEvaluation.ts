@@ -61,19 +61,31 @@ export const useEvaluation = () => {
         nextSteps 
       } = response.data;
       
-      setEvaluationScore(score);
-      setEvaluationFeedback(feedback);
-      setEvaluationStrengths(strengths || []);
-      setEvaluationImprovements(improvements || []);
-      setEvaluationActionable(actionable || []);
+      // Parse any response data that might be objects
+      const processResponseItems = (items: any[] | undefined): string[] => {
+        if (!items || !Array.isArray(items)) return [];
+        return items.map(item => typeof item === 'string' ? item : JSON.stringify(item));
+      };
       
-      // Set new evaluation fields
+      setEvaluationScore(score);
+      setEvaluationFeedback(typeof feedback === 'string' ? feedback : JSON.stringify(feedback));
+      setEvaluationStrengths(processResponseItems(strengths));
+      setEvaluationImprovements(processResponseItems(improvements));
+      setEvaluationActionable(processResponseItems(actionable));
+      
+      // Handle potentially complex object formats for weaknesses
       if (weaknesses) {
-        setEvaluationWeaknesses(weaknesses);
+        const processedWeaknesses = {
+          mainWeakness: typeof weaknesses.mainWeakness === 'string' 
+            ? weaknesses.mainWeakness 
+            : JSON.stringify(weaknesses.mainWeakness),
+          improvementSteps: processResponseItems(weaknesses.improvementSteps)
+        };
+        setEvaluationWeaknesses(processedWeaknesses);
       }
       
       if (nextSteps) {
-        setEvaluationNextSteps(nextSteps);
+        setEvaluationNextSteps(processResponseItems(nextSteps));
       }
       
       toast.success("Challenge evaluation completed!");
