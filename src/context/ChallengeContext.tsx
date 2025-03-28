@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useContext,
@@ -13,6 +14,7 @@ export interface ChallengeDetails {
   description: string;
   company: string;
   industry?: string;
+  instructions?: string[]; // Added instructions property
 }
 
 interface StickyNoteType {
@@ -36,6 +38,7 @@ interface ChallengeContextType {
   setNotes: React.Dispatch<React.SetStateAction<StickyNoteType[]>>;
   chatHistory: ChatMessage[];
   setChatHistory: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  clearChatHistory: () => void; // Added clearChatHistory method
   isEvaluating: boolean;
   setIsEvaluating: React.Dispatch<React.SetStateAction<boolean>>;
   showResults: boolean;
@@ -98,6 +101,11 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
     improvementSteps: string[];
   } | null>(null);
   const [evaluationNextSteps, setEvaluationNextSteps] = useState<string[]>([]);
+  
+  // Add clearChatHistory function implementation
+  const clearChatHistory = () => {
+    setChatHistory([]);
+  };
 
   return (
     <ChallengeContext.Provider
@@ -108,6 +116,7 @@ export function ChallengeProvider({ children }: { children: React.ReactNode }) {
         setNotes,
         chatHistory,
         setChatHistory,
+        clearChatHistory, // Add the new function to the context
         isEvaluating,
         setIsEvaluating,
         showResults,
