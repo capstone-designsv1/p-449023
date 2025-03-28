@@ -45,6 +45,8 @@ const StickyNote: React.FC<StickyNoteProps> = ({
       x: e.clientX - noteRect.left,
       y: e.clientY - noteRect.top
     });
+    
+    e.stopPropagation();
   };
 
   const handleMouseMove = (e: MouseEvent) => {
@@ -63,8 +65,9 @@ const StickyNote: React.FC<StickyNoteProps> = ({
     setIsDragging(false);
   };
 
-  const handleDoubleClick = () => {
+  const handleDoubleClick = (e: React.MouseEvent) => {
     setIsEditing(true);
+    e.stopPropagation();
   };
 
   const handleBlur = () => {
@@ -99,7 +102,10 @@ const StickyNote: React.FC<StickyNoteProps> = ({
     >
       <button
         className="absolute top-1 right-1 p-1 rounded-full hover:bg-gray-200 text-gray-600"
-        onClick={() => deleteNote(id)}
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteNote(id);
+        }}
       >
         <X size={14} />
       </button>
@@ -112,6 +118,7 @@ const StickyNote: React.FC<StickyNoteProps> = ({
           onChange={(e) => setEditText(e.target.value)}
           onBlur={handleBlur}
           style={{ backgroundColor: "transparent", minHeight: "6rem" }}
+          onClick={(e) => e.stopPropagation()}
         />
       ) : (
         <div className="p-3 pt-4 whitespace-pre-wrap">{text}</div>

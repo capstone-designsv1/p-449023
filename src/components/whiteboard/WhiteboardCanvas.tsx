@@ -71,6 +71,12 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanva
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (activeTool !== "eraser") return;
     
+    // If double click with eraser tool, clear the entire canvas
+    if (e.detail === 2 && activeTool === "eraser") {
+      clearCanvas();
+      return;
+    }
+    
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     
@@ -82,6 +88,15 @@ const WhiteboardCanvas: React.FC<WhiteboardCanvasProps> = ({ activeTool, onCanva
     
     setIsDrawing(true);
     setLastPosition({ x, y });
+  };
+
+  const clearCanvas = () => {
+    if (!canvasRef.current || !context) return;
+    
+    const canvas = canvasRef.current;
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    toast.success("Canvas cleared");
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
