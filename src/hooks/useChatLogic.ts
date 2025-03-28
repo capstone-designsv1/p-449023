@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,7 +39,8 @@ export const useChatLogic = (
           action: "start",
           companyName: companyName,
           designLevel: "Senior", // This should ideally be configurable
-          industry: industry
+          industry: industry,
+          chunkResponses: true // Add a flag to request chunked responses
         }
       });
 
@@ -89,7 +91,8 @@ export const useChatLogic = (
           })),
           companyName: companyName,
           designLevel: "Senior", // This should ideally be configurable
-          industry: industry
+          industry: industry,
+          chunkResponses: true // Add a flag to request chunked responses
         }
       });
 
