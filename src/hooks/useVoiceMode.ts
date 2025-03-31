@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
@@ -12,6 +13,7 @@ interface UseVoiceModeProps {
 export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps) => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const lastAssistantMessageRef = useRef<string | null>(null);
+  const isInitializedRef = useRef(false);
   
   // Handlers for speech-to-text and text-to-speech events
   const handleTranscriptReady = (text: string) => {
@@ -23,7 +25,7 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
   
   const handleSpeechStart = () => {
     console.log("Voice mode: AI speaking started");
-    toast.info("AI is speaking...");
+    toast.info("AI is speaking...", { id: "ai-speaking" });
   };
   
   const handleSpeechEnd = () => {
@@ -52,16 +54,26 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
 
   // Auto-speak AI responses when in voice mode
   useEffect(() => {
-    if (isVoiceMode && chatHistory.length > 0) {
+    if (isVoiceMode && chatHistory.length > 0 && isInitializedRef.current) {
       const lastMessage = chatHistory[chatHistory.length - 1];
+      
       // Only auto-speak new assistant messages
       if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
         console.log("Voice mode: New assistant message detected, auto-speaking");
         lastAssistantMessageRef.current = lastMessage.content;
-        speakText(lastMessage.content);
+        
+        // Short delay to ensure UI is ready
+        setTimeout(() => {
+          speakText(lastMessage.content);
+        }, 300);
       }
     }
   }, [chatHistory, isVoiceMode, speakText]);
+  
+  // Set initialized after first render
+  useEffect(() => {
+    isInitializedRef.current = true;
+  }, []);
 
   // Toggle voice mode on/off
   const toggleVoiceMode = () => {

@@ -66,7 +66,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error("ElevenLabs API error:", errorText);
-      throw new Error(`ElevenLabs API error: ${errorText}`);
+      throw new Error(`ElevenLabs API error: ${response.status} ${errorText}`);
     }
 
     // The response contains the audio as binary data

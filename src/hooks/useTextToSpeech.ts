@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -23,107 +23,80 @@ export const useTextToSpeech = ({
 }: UseTextToSpeechProps) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
-  const audioUrlRef = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const customVoiceId = 'F9Nt4wN7louPPlCeLCMN'; // Using the custom voice ID
-  const retryCountRef = useRef(0);
-  const maxRetries = 2;
-
-  // Initialize audio player
-  if (typeof window !== 'undefined' && !audioPlayerRef.current) {
-    audioPlayerRef.current = new Audio();
-    
-    // Add event listeners
-    audioPlayerRef.current.addEventListener('ended', () => {
-      console.log("Audio playback ended normally");
-      cleanupAudioResources();
-      setIsSpeaking(false);
-      onSpeechEnd();
-    });
-    
-    audioPlayerRef.current.addEventListener('error', (e) => {
-      console.error("Audio playback error:", e);
-      console.error("Audio error code:", audioPlayerRef.current?.error?.code);
-      console.error("Audio error message:", audioPlayerRef.current?.error?.message);
+  
+  // Make sure we only have one cleanup timer at a time
+  const cleanupTimerRef = useRef<number | null>(null);
+  
+  // Create audio element only once during initialization
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      audioRef.current = new Audio();
       
-      // Attempt retry for certain errors
-      if (retryCountRef.current < maxRetries) {
-        retryCountRef.current++;
-        console.log(`Retry attempt ${retryCountRef.current}/${maxRetries}`);
-        
-        // Recreate the audio element
-        if (audioUrlRef.current) {
-          const currentUrl = audioUrlRef.current;
-          setTimeout(() => {
-            createAndPlayAudio(currentUrl);
-          }, 500);
-          return;
+      const audio = audioRef.current;
+      
+      // Add event listeners
+      audio.addEventListener('ended', handleAudioEnded);
+      audio.addEventListener('error', handleAudioError);
+      audio.addEventListener('canplaythrough', handleCanPlayThrough);
+      
+      // Cleanup on component unmount
+      return () => {
+        if (audio) {
+          audio.pause();
+          audio.src = '';
+          audio.removeEventListener('ended', handleAudioEnded);
+          audio.removeEventListener('error', handleAudioError);
+          audio.removeEventListener('canplaythrough', handleCanPlayThrough);
         }
-      }
-      
-      toast.error("Failed to play audio. Please try again.");
-      cleanupAudioResources();
-      setIsSpeaking(false);
-      onSpeechEnd();
-    });
-
-    // Add canplaythrough event listener
-    audioPlayerRef.current.addEventListener('canplaythrough', () => {
-      console.log("Audio can play through without buffering");
-    });
-  }
+        
+        if (cleanupTimerRef.current) {
+          clearTimeout(cleanupTimerRef.current);
+        }
+      };
+    }
+  }, []);
+  
+  // Event handlers as separate functions for cleanup
+  const handleAudioEnded = () => {
+    console.log("Audio playback ended normally");
+    cleanupAudioResources();
+    setIsSpeaking(false);
+    onSpeechEnd();
+  };
+  
+  const handleAudioError = (e: Event) => {
+    const error = audioRef.current?.error;
+    console.error("Audio playback error:", e);
+    console.error("Audio error code:", error?.code);
+    console.error("Audio error message:", error?.message);
+    
+    toast.error("Failed to play audio. Please try again.");
+    cleanupAudioResources();
+    setIsSpeaking(false);
+    onSpeechEnd();
+  };
+  
+  const handleCanPlayThrough = () => {
+    console.log("Audio can play through without buffering");
+  };
 
   // Cleanup function for audio resources
-  const cleanupAudioResources = () => {
-    if (audioUrlRef.current && audioUrlRef.current.startsWith('blob:')) {
-      console.log("Revoking blob URL:", audioUrlRef.current);
-      URL.revokeObjectURL(audioUrlRef.current);
-      audioUrlRef.current = null;
+  const cleanupAudioResources = useCallback(() => {
+    if (audioRef.current) {
+      // Reset audio element
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
     }
     
-    if (audioPlayerRef.current) {
-      audioPlayerRef.current.src = '';
+    // Clear any existing timers
+    if (cleanupTimerRef.current) {
+      clearTimeout(cleanupTimerRef.current);
+      cleanupTimerRef.current = null;
     }
-    
-    retryCountRef.current = 0;
-  };
-
-  // Helper function to create and play audio from URL
-  const createAndPlayAudio = (url: string) => {
-    if (!audioPlayerRef.current) return;
-    
-    try {
-      console.log("Setting audio source to:", url);
-      
-      // Reset the audio player
-      audioPlayerRef.current.pause();
-      audioPlayerRef.current.currentTime = 0;
-      
-      // Set new source
-      audioPlayerRef.current.src = url;
-      audioPlayerRef.current.load();
-      
-      console.log("Attempting to play audio...");
-      const playPromise = audioPlayerRef.current.play();
-      
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
-          console.log("Audio playback started successfully");
-        }).catch(error => {
-          console.error("Audio play promise error:", error);
-          toast.error("Failed to play audio. Please try again.");
-          cleanupAudioResources();
-          setIsSpeaking(false);
-          onSpeechEnd();
-        });
-      }
-    } catch (error) {
-      console.error("Error in createAndPlayAudio:", error);
-      cleanupAudioResources();
-      setIsSpeaking(false);
-      onSpeechEnd();
-    }
-  };
+  }, []);
 
   // Change voice
   const changeVoice = useCallback((voice: ElevenLabsVoice) => {
@@ -159,43 +132,69 @@ export const useTextToSpeech = ({
         throw new Error('No audio content received');
       }
       
-      // Convert base64 to audio
+      // Process the audio content
+      const audioContent = response.data.audioContent;
+      console.log("Audio content length:", audioContent.length);
+      
+      // Validate base64 content
+      if (!audioContent || audioContent.trim() === '') {
+        throw new Error('Empty audio content received');
+      }
+      
+      // Create a safe audio element
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+      }
+      
+      // Convert base64 to blob directly
       try {
-        const audioContent = response.data.audioContent;
-        console.log("Audio content length:", audioContent.length);
+        // Create blob from base64
+        const byteCharacters = atob(audioContent);
+        const byteArrays = [];
         
-        // Validate base64 content
-        if (!audioContent || audioContent.trim() === '') {
-          throw new Error('Empty audio content received');
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+          const byteNumbers = new Array(slice.length);
+          
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+          
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
         }
         
-        // Create data URI and then blob
-        const base64Uri = `data:audio/mp3;base64,${audioContent}`;
-        console.log("Created data URI for audio");
-        
-        // Fetch the data URI to create a blob
-        const fetchResponse = await fetch(base64Uri);
-        if (!fetchResponse.ok) {
-          throw new Error(`Failed to create blob from data URI: ${fetchResponse.statusText}`);
-        }
-        
-        const blob = await fetchResponse.blob();
-        console.log("Audio blob created:", blob.size, "bytes, type:", blob.type);
-        
-        if (blob.size === 0) {
-          throw new Error('Created blob has zero size');
-        }
-        
-        // Create object URL
+        const blob = new Blob(byteArrays, { type: 'audio/mpeg' });
         const url = URL.createObjectURL(blob);
         console.log("Created blob URL:", url);
-        audioUrlRef.current = url;
         
         // Play the audio
-        createAndPlayAudio(url);
+        const audio = audioRef.current;
+        audio.src = url;
+        audio.load();
+        
+        // Use a promise to handle both user interaction requirements and errors
+        const playPromise = audio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.error("Play promise error:", error);
+            
+            // If autoplay failed due to browser restrictions, show a helpful message
+            if (error.name === 'NotAllowedError') {
+              toast.error("Browser blocked autoplay. Please click the audio button again.");
+            } else {
+              toast.error("Failed to play audio. Please try again.");
+            }
+            
+            cleanupAudioResources();
+            setIsSpeaking(false);
+            onSpeechEnd();
+          });
+        }
       } catch (error) {
-        console.error("Error processing audio data:", error);
-        throw new Error('Failed to process audio data');
+        console.error("Error creating audio from base64:", error);
+        throw new Error("Failed to process audio data");
       }
     } catch (error) {
       console.error('Error speaking text:', error);
@@ -204,20 +203,20 @@ export const useTextToSpeech = ({
       setIsSpeaking(false);
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd, customVoiceId]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, cleanupAudioResources, customVoiceId]);
 
   const stopSpeaking = useCallback(() => {
-    if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
+    if (audioRef.current && !audioRef.current.paused) {
       console.log("Stopping audio playback");
-      audioPlayerRef.current.pause();
-      audioPlayerRef.current.currentTime = 0;
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       
       cleanupAudioResources();
       setIsSpeaking(false);
       onSpeechEnd();
       console.log("Audio playback stopped");
     }
-  }, [onSpeechEnd]);
+  }, [onSpeechEnd, cleanupAudioResources]);
 
   return {
     isSpeaking,
