@@ -8,11 +8,20 @@ interface UseTextToSpeechProps {
   onSpeechEnd: () => void;
 }
 
+export type ElevenLabsVoice = 
+  | 'alloy'   // Rachel (female) - default
+  | 'echo'    // Charlie (male)
+  | 'fable'   // Domi (female)
+  | 'onyx'    // Adam (male)
+  | 'nova'    // Sarah (female)
+  | 'shimmer'; // Elli (female)
+
 export const useTextToSpeech = ({
   onSpeechStart,
   onSpeechEnd
 }: UseTextToSpeechProps) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('alloy');
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize audio player
@@ -24,15 +33,22 @@ export const useTextToSpeech = ({
     });
   }
 
-  const speakText = useCallback(async (text: string, voice = 'alloy') => {
+  // Change voice
+  const changeVoice = useCallback((voice: ElevenLabsVoice) => {
+    setCurrentVoice(voice);
+  }, []);
+
+  const speakText = useCallback(async (text: string, voice?: ElevenLabsVoice) => {
     if (!text || isSpeaking) return;
+    
+    const selectedVoice = voice || currentVoice;
     
     try {
       onSpeechStart();
       setIsSpeaking(true);
       
       const response = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice }
+        body: { text, voice: selectedVoice }
       });
       
       if (response.error) {
@@ -60,7 +76,7 @@ export const useTextToSpeech = ({
       setIsSpeaking(false);
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, currentVoice]);
 
   const stopSpeaking = useCallback(() => {
     if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
@@ -73,6 +89,8 @@ export const useTextToSpeech = ({
 
   return {
     isSpeaking,
+    currentVoice,
+    changeVoice,
     speakText,
     stopSpeaking
   };

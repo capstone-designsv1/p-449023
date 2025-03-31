@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
-import { useTextToSpeech } from "./useTextToSpeech";
+import { useTextToSpeech, ElevenLabsVoice } from "./useTextToSpeech";
 import { ChatMessage } from "@/services/interviewChatService";
 
 interface UseVoiceModeProps {
@@ -42,6 +42,8 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
 
   const {
     isSpeaking,
+    currentVoice,
+    changeVoice,
     speakText,
     stopSpeaking
   } = useTextToSpeech({
@@ -112,12 +114,21 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
     }
   };
 
+  // Handle voice change
+  const handleChangeVoice = (voice: ElevenLabsVoice) => {
+    console.log("Voice mode: Changing voice to", voice);
+    changeVoice(voice);
+    toast.success(`Voice changed to ${voice}`);
+  };
+
   return {
     isVoiceMode,
     isListening,
     isSpeaking,
+    currentVoice,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking
+    toggleSpeaking,
+    changeVoice: handleChangeVoice
   };
 };

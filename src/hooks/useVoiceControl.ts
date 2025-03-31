@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
+import { ElevenLabsVoice } from "@/hooks/useTextToSpeech";
 
 interface UseVoiceControlProps {
   chatHistory: any[];
@@ -25,9 +26,11 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     isVoiceMode,
     isListening,
     isSpeaking,
+    currentVoice,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking
+    toggleSpeaking,
+    changeVoice
   } = useVoiceMode({
     chatHistory,
     onMessageReady: handleTranscriptReady
@@ -37,10 +40,12 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     isVoiceMode,
     isListening,
     isSpeaking,
+    currentVoice,
     inputText,
     setInputText,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking
+    toggleSpeaking,
+    changeVoice
   };
 };

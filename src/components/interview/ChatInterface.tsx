@@ -29,11 +29,13 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     isVoiceMode,
     isListening,
     isSpeaking,
+    currentVoice,
     handleSendMessage,
     handleEndSession,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking
+    toggleSpeaking,
+    changeVoice
   } = useInterviewChat({
     companyName,
     designLevel,
@@ -63,6 +65,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               toggleListening={toggleListening}
               toggleSpeaking={toggleSpeaking}
               chatHistoryExists={chatHistory.length > 0}
+              currentVoice={currentVoice}
+              onChangeVoice={changeVoice}
             />
           )}
 

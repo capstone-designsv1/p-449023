@@ -1,7 +1,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-const GOOGLE_API_KEY = Deno.env.get('GOOGLE_API_KEY');
+const ELEVEN_LABS_API_KEY = Deno.env.get('ELEVEN_LABS_API_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,8 +15,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!GOOGLE_API_KEY) {
-      throw new Error("GOOGLE_API_KEY is not set");
+    if (!ELEVEN_LABS_API_KEY) {
+      throw new Error("ELEVEN_LABS_API_KEY is not set");
     }
 
     const { text, voice } = await req.json();
@@ -25,54 +25,55 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
-    console.log(`Converting text to speech with voice ${voice || 'en-US-Neural2-F'}...`);
+    console.log(`Converting text to speech with ElevenLabs voice ${voice || 'Rachel'}...`);
 
-    // Map simple voice names to Google's more complex voice names
+    // Map simple voice names to ElevenLabs voice IDs
+    // Using a selection of popular ElevenLabs voices
     const voiceMapping: Record<string, string> = {
-      'alloy': 'en-US-Neural2-F', // Female voice
-      'echo': 'en-US-Neural2-C',  // Female voice (different style)
-      'fable': 'en-US-Neural2-F', // Female voice
-      'onyx': 'en-US-Neural2-D',  // Male voice
-      'nova': 'en-US-Neural2-A',  // Female voice
-      'shimmer': 'en-US-Neural2-E' // Female voice
+      'alloy': '21m00Tcm4TlvDq8ikWAM', // Rachel
+      'echo': 'IKne3meq5aSn9XLyUdCD', // Charlie
+      'fable': 'D38z5RcWu1voky8WS1ja', // Domi
+      'onyx': 'AZnzlk1XvdvUeBnXmlld', // Adam
+      'nova': 'EXAVITQu4vr4xnSDxMaL', // Sarah
+      'shimmer': 'MF3mGyEYCl7XYWbV9V6O' // Elli
     };
 
-    // Use the mapped voice or default
-    const googleVoice = voiceMapping[voice] || 'en-US-Neural2-F';
-    const gender = googleVoice.includes('-D') || googleVoice.includes('-J') ? 'MALE' : 'FEMALE';
+    // Use the mapped voice ID or default to Rachel
+    const voiceId = voiceMapping[voice] || '21m00Tcm4TlvDq8ikWAM';
 
-    // Generate speech from text using Google Cloud Text-to-Speech API
-    const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_API_KEY}`, {
+    // Generate speech from text using ElevenLabs API
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
+        'Accept': 'audio/mpeg',
         'Content-Type': 'application/json',
+        'xi-api-key': ELEVEN_LABS_API_KEY,
       },
       body: JSON.stringify({
-        input: {
-          text: text
-        },
-        voice: {
-          languageCode: 'en-US',
-          name: googleVoice,
-          ssmlGender: gender
-        },
-        audioConfig: {
-          audioEncoding: 'MP3'
+        text: text,
+        model_id: 'eleven_monolingual_v1',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75
         }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Google API error:", errorText);
-      throw new Error(`Google API error: ${errorText}`);
+      console.error("ElevenLabs API error:", errorText);
+      throw new Error(`ElevenLabs API error: ${errorText}`);
     }
 
     console.log("Text-to-speech conversion successful");
     
-    // The response contains the audio content as a base64 encoded string
-    const result = await response.json();
-    const base64Audio = result.audioContent;
+    // The response contains the audio as binary data
+    const audioBuffer = await response.arrayBuffer();
+    
+    // Convert binary to base64
+    const base64Audio = btoa(
+      String.fromCharCode(...new Uint8Array(audioBuffer))
+    );
 
     return new Response(
       JSON.stringify({ audioContent: base64Audio }),
