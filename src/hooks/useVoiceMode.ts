@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
@@ -114,13 +113,6 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
     }
   };
 
-  // Handle voice change
-  const handleChangeVoice = (voice: ElevenLabsVoice) => {
-    console.log("Voice mode: Changing voice to", voice);
-    changeVoice(voice);
-    toast.success(`Voice changed to ${voice}`);
-  };
-
   return {
     isVoiceMode,
     isListening,
@@ -129,6 +121,7 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
     toggleVoiceMode,
     toggleListening,
     toggleSpeaking,
-    changeVoice: handleChangeVoice
+    // Keep changeVoice in the returned object for backward compatibility
+    changeVoice: () => {} // No-op since we're using a fixed voice
   };
 };

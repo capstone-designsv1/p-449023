@@ -14,15 +14,17 @@ export type ElevenLabsVoice =
   | 'fable'   // Domi (female)
   | 'onyx'    // Adam (male)
   | 'nova'    // Sarah (female)
-  | 'shimmer'; // Elli (female)
+  | 'shimmer'  // Elli (female)
+  | 'custom'; // Custom voice ID
 
 export const useTextToSpeech = ({
   onSpeechStart,
   onSpeechEnd
 }: UseTextToSpeechProps) => {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('alloy');
+  const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const customVoiceId = 'F9Nt4wN7louPPlCeLCMN'; // Using the custom voice ID
 
   // Initialize audio player
   if (typeof window !== 'undefined' && !audioPlayerRef.current) {
@@ -41,14 +43,17 @@ export const useTextToSpeech = ({
   const speakText = useCallback(async (text: string, voice?: ElevenLabsVoice) => {
     if (!text || isSpeaking) return;
     
-    const selectedVoice = voice || currentVoice;
+    const selectedVoice = 'custom'; // Always use custom voice
     
     try {
       onSpeechStart();
       setIsSpeaking(true);
       
       const response = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice: selectedVoice }
+        body: { 
+          text, 
+          voice: customVoiceId // Always pass the custom voice ID
+        }
       });
       
       if (response.error) {
@@ -76,7 +81,7 @@ export const useTextToSpeech = ({
       setIsSpeaking(false);
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd, currentVoice]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, customVoiceId]);
 
   const stopSpeaking = useCallback(() => {
     if (audioPlayerRef.current && !audioPlayerRef.current.paused) {

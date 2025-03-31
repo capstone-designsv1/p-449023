@@ -25,21 +25,10 @@ serve(async (req) => {
       throw new Error('Text is required');
     }
 
-    console.log(`Converting text to speech with ElevenLabs voice ${voice || 'Rachel'}...`);
+    console.log(`Converting text to speech with ElevenLabs voice ID ${voice || 'F9Nt4wN7louPPlCeLCMN'}...`);
 
-    // Map simple voice names to ElevenLabs voice IDs
-    // Using a selection of popular ElevenLabs voices
-    const voiceMapping: Record<string, string> = {
-      'alloy': '21m00Tcm4TlvDq8ikWAM', // Rachel
-      'echo': 'IKne3meq5aSn9XLyUdCD', // Charlie
-      'fable': 'D38z5RcWu1voky8WS1ja', // Domi
-      'onyx': 'AZnzlk1XvdvUeBnXmlld', // Adam
-      'nova': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-      'shimmer': 'MF3mGyEYCl7XYWbV9V6O' // Elli
-    };
-
-    // Use the mapped voice ID or default to Rachel
-    const voiceId = voiceMapping[voice] || '21m00Tcm4TlvDq8ikWAM';
+    // Always use the provided voice ID, or fall back to the custom one if not provided
+    const voiceId = voice || 'F9Nt4wN7louPPlCeLCMN';
 
     // Generate speech from text using ElevenLabs API
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {

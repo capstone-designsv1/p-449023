@@ -31,13 +31,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
     inputText,
     setInputText,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking,
-    changeVoice
+    toggleSpeaking
   } = useVoiceControl({
     chatHistory,
     sendMessage
@@ -61,8 +59,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
           toggleListening={toggleListening}
           toggleSpeaking={toggleSpeaking}
           hasChatHistory={chatHistory.length > 0}
-          currentVoice={currentVoice}
-          onChangeVoice={changeVoice}
         />
       )}
       
