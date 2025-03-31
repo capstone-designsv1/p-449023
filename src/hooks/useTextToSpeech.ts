@@ -33,6 +33,14 @@ export const useTextToSpeech = ({
       setIsSpeaking(false);
       onSpeechEnd();
     });
+    
+    // Add error event listener
+    audioPlayerRef.current.addEventListener('error', (e) => {
+      console.error("Audio playback error:", e);
+      toast.error("Failed to play audio. Please try again.");
+      setIsSpeaking(false);
+      onSpeechEnd();
+    });
   }
 
   // Change voice
@@ -49,12 +57,16 @@ export const useTextToSpeech = ({
       onSpeechStart();
       setIsSpeaking(true);
       
+      console.log("Sending TTS request with text:", text.substring(0, 50) + "...");
+      
       const response = await supabase.functions.invoke('text-to-speech', {
         body: { 
           text, 
           voice: customVoiceId // Always pass the custom voice ID
         }
       });
+      
+      console.log("TTS response received:", response);
       
       if (response.error) {
         throw new Error(response.error.message);
@@ -65,15 +77,41 @@ export const useTextToSpeech = ({
       }
       
       // Convert base64 to audio
-      const blob = await (await fetch(
-        `data:audio/mp3;base64,${response.data.audioContent}`
-      )).blob();
-      
-      const url = URL.createObjectURL(blob);
-      
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = url;
-        await audioPlayerRef.current.play();
+      try {
+        const audioContent = response.data.audioContent;
+        console.log("Audio content length:", audioContent.length);
+        
+        // Create audio blob with proper MIME type
+        const blob = await fetch(`data:audio/mp3;base64,${audioContent}`).then(r => r.blob());
+        console.log("Audio blob created:", blob.size, "bytes");
+        
+        const url = URL.createObjectURL(blob);
+        
+        if (audioPlayerRef.current) {
+          // Reset the audio player before setting new source
+          audioPlayerRef.current.pause();
+          audioPlayerRef.current.currentTime = 0;
+          
+          // Set new source and play
+          audioPlayerRef.current.src = url;
+          
+          // Add event listeners for debugging
+          const playPromise = audioPlayerRef.current.play();
+          
+          if (playPromise !== undefined) {
+            playPromise.catch(error => {
+              console.error("Audio play error:", error);
+              toast.error("Failed to play audio. Please try again.");
+              setIsSpeaking(false);
+              onSpeechEnd();
+            });
+          }
+          
+          console.log("Audio playback started");
+        }
+      } catch (error) {
+        console.error("Error processing audio data:", error);
+        throw new Error('Failed to process audio data');
       }
     } catch (error) {
       console.error('Error speaking text:', error);
@@ -85,10 +123,19 @@ export const useTextToSpeech = ({
 
   const stopSpeaking = useCallback(() => {
     if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
+      // Clean up the current audio URL to prevent memory leaks
+      const currentSrc = audioPlayerRef.current.src;
+      
       audioPlayerRef.current.pause();
       audioPlayerRef.current.currentTime = 0;
+      
+      if (currentSrc && currentSrc.startsWith('blob:')) {
+        URL.revokeObjectURL(currentSrc);
+      }
+      
       setIsSpeaking(false);
       onSpeechEnd();
+      console.log("Audio playback stopped");
     }
   }, [onSpeechEnd]);
 
