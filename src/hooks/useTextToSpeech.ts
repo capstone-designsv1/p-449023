@@ -24,24 +24,106 @@ export const useTextToSpeech = ({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
   const customVoiceId = 'F9Nt4wN7louPPlCeLCMN'; // Using the custom voice ID
+  const retryCountRef = useRef(0);
+  const maxRetries = 2;
 
   // Initialize audio player
   if (typeof window !== 'undefined' && !audioPlayerRef.current) {
     audioPlayerRef.current = new Audio();
+    
+    // Add event listeners
     audioPlayerRef.current.addEventListener('ended', () => {
+      console.log("Audio playback ended normally");
+      cleanupAudioResources();
       setIsSpeaking(false);
       onSpeechEnd();
     });
     
-    // Add error event listener
     audioPlayerRef.current.addEventListener('error', (e) => {
       console.error("Audio playback error:", e);
+      console.error("Audio error code:", audioPlayerRef.current?.error?.code);
+      console.error("Audio error message:", audioPlayerRef.current?.error?.message);
+      
+      // Attempt retry for certain errors
+      if (retryCountRef.current < maxRetries) {
+        retryCountRef.current++;
+        console.log(`Retry attempt ${retryCountRef.current}/${maxRetries}`);
+        
+        // Recreate the audio element
+        if (audioUrlRef.current) {
+          const currentUrl = audioUrlRef.current;
+          setTimeout(() => {
+            createAndPlayAudio(currentUrl);
+          }, 500);
+          return;
+        }
+      }
+      
       toast.error("Failed to play audio. Please try again.");
+      cleanupAudioResources();
       setIsSpeaking(false);
       onSpeechEnd();
     });
+
+    // Add canplaythrough event listener
+    audioPlayerRef.current.addEventListener('canplaythrough', () => {
+      console.log("Audio can play through without buffering");
+    });
   }
+
+  // Cleanup function for audio resources
+  const cleanupAudioResources = () => {
+    if (audioUrlRef.current && audioUrlRef.current.startsWith('blob:')) {
+      console.log("Revoking blob URL:", audioUrlRef.current);
+      URL.revokeObjectURL(audioUrlRef.current);
+      audioUrlRef.current = null;
+    }
+    
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.src = '';
+    }
+    
+    retryCountRef.current = 0;
+  };
+
+  // Helper function to create and play audio from URL
+  const createAndPlayAudio = (url: string) => {
+    if (!audioPlayerRef.current) return;
+    
+    try {
+      console.log("Setting audio source to:", url);
+      
+      // Reset the audio player
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current.currentTime = 0;
+      
+      // Set new source
+      audioPlayerRef.current.src = url;
+      audioPlayerRef.current.load();
+      
+      console.log("Attempting to play audio...");
+      const playPromise = audioPlayerRef.current.play();
+      
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          console.log("Audio playback started successfully");
+        }).catch(error => {
+          console.error("Audio play promise error:", error);
+          toast.error("Failed to play audio. Please try again.");
+          cleanupAudioResources();
+          setIsSpeaking(false);
+          onSpeechEnd();
+        });
+      }
+    } catch (error) {
+      console.error("Error in createAndPlayAudio:", error);
+      cleanupAudioResources();
+      setIsSpeaking(false);
+      onSpeechEnd();
+    }
+  };
 
   // Change voice
   const changeVoice = useCallback((voice: ElevenLabsVoice) => {
@@ -51,7 +133,8 @@ export const useTextToSpeech = ({
   const speakText = useCallback(async (text: string, voice?: ElevenLabsVoice) => {
     if (!text || isSpeaking) return;
     
-    const selectedVoice = 'custom'; // Always use custom voice
+    // Clean up any existing audio
+    cleanupAudioResources();
     
     try {
       onSpeechStart();
@@ -81,34 +164,35 @@ export const useTextToSpeech = ({
         const audioContent = response.data.audioContent;
         console.log("Audio content length:", audioContent.length);
         
-        // Create audio blob with proper MIME type
-        const blob = await fetch(`data:audio/mp3;base64,${audioContent}`).then(r => r.blob());
-        console.log("Audio blob created:", blob.size, "bytes");
-        
-        const url = URL.createObjectURL(blob);
-        
-        if (audioPlayerRef.current) {
-          // Reset the audio player before setting new source
-          audioPlayerRef.current.pause();
-          audioPlayerRef.current.currentTime = 0;
-          
-          // Set new source and play
-          audioPlayerRef.current.src = url;
-          
-          // Add event listeners for debugging
-          const playPromise = audioPlayerRef.current.play();
-          
-          if (playPromise !== undefined) {
-            playPromise.catch(error => {
-              console.error("Audio play error:", error);
-              toast.error("Failed to play audio. Please try again.");
-              setIsSpeaking(false);
-              onSpeechEnd();
-            });
-          }
-          
-          console.log("Audio playback started");
+        // Validate base64 content
+        if (!audioContent || audioContent.trim() === '') {
+          throw new Error('Empty audio content received');
         }
+        
+        // Create data URI and then blob
+        const base64Uri = `data:audio/mp3;base64,${audioContent}`;
+        console.log("Created data URI for audio");
+        
+        // Fetch the data URI to create a blob
+        const fetchResponse = await fetch(base64Uri);
+        if (!fetchResponse.ok) {
+          throw new Error(`Failed to create blob from data URI: ${fetchResponse.statusText}`);
+        }
+        
+        const blob = await fetchResponse.blob();
+        console.log("Audio blob created:", blob.size, "bytes, type:", blob.type);
+        
+        if (blob.size === 0) {
+          throw new Error('Created blob has zero size');
+        }
+        
+        // Create object URL
+        const url = URL.createObjectURL(blob);
+        console.log("Created blob URL:", url);
+        audioUrlRef.current = url;
+        
+        // Play the audio
+        createAndPlayAudio(url);
       } catch (error) {
         console.error("Error processing audio data:", error);
         throw new Error('Failed to process audio data');
@@ -116,6 +200,7 @@ export const useTextToSpeech = ({
     } catch (error) {
       console.error('Error speaking text:', error);
       toast.error('Failed to convert text to speech. Please try again.');
+      cleanupAudioResources();
       setIsSpeaking(false);
       onSpeechEnd();
     }
@@ -123,16 +208,11 @@ export const useTextToSpeech = ({
 
   const stopSpeaking = useCallback(() => {
     if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
-      // Clean up the current audio URL to prevent memory leaks
-      const currentSrc = audioPlayerRef.current.src;
-      
+      console.log("Stopping audio playback");
       audioPlayerRef.current.pause();
       audioPlayerRef.current.currentTime = 0;
       
-      if (currentSrc && currentSrc.startsWith('blob:')) {
-        URL.revokeObjectURL(currentSrc);
-      }
-      
+      cleanupAudioResources();
       setIsSpeaking(false);
       onSpeechEnd();
       console.log("Audio playback stopped");

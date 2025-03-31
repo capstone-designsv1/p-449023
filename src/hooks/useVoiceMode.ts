@@ -122,6 +122,6 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
     toggleListening,
     toggleSpeaking,
     // Keep changeVoice in the returned object for backward compatibility
-    changeVoice: () => {} // No-op since we're using a fixed voice
+    changeVoice
   };
 };
