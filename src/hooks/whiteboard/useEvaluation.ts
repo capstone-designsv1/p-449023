@@ -61,31 +61,19 @@ export const useEvaluation = () => {
         nextSteps 
       } = response.data;
       
-      // Parse any response data that might be objects
-      const processResponseItems = (items: any[] | undefined): string[] => {
-        if (!items || !Array.isArray(items)) return [];
-        return items.map(item => typeof item === 'string' ? item : JSON.stringify(item));
-      };
-      
       setEvaluationScore(score);
-      setEvaluationFeedback(typeof feedback === 'string' ? feedback : JSON.stringify(feedback));
-      setEvaluationStrengths(processResponseItems(strengths));
-      setEvaluationImprovements(processResponseItems(improvements));
-      setEvaluationActionable(processResponseItems(actionable));
+      setEvaluationFeedback(feedback);
+      setEvaluationStrengths(strengths || []);
+      setEvaluationImprovements(improvements || []);
+      setEvaluationActionable(actionable || []);
       
-      // Handle potentially complex object formats for weaknesses
+      // Set new evaluation fields
       if (weaknesses) {
-        const processedWeaknesses = {
-          mainWeakness: typeof weaknesses.mainWeakness === 'string' 
-            ? weaknesses.mainWeakness 
-            : JSON.stringify(weaknesses.mainWeakness),
-          improvementSteps: processResponseItems(weaknesses.improvementSteps)
-        };
-        setEvaluationWeaknesses(processedWeaknesses);
+        setEvaluationWeaknesses(weaknesses);
       }
       
       if (nextSteps) {
-        setEvaluationNextSteps(processResponseItems(nextSteps));
+        setEvaluationNextSteps(nextSteps);
       }
       
       toast.success("Challenge evaluation completed!");

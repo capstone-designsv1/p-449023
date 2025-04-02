@@ -76,7 +76,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
                 <ul className="space-y-3">
                   {evaluationStrengths.map((strength, index) => (
                     <li key={index} className="text-gray-700">
-                      {typeof strength === 'string' ? strength : JSON.stringify(strength)}
+                      <p>{strength}</p>
                     </li>
                   ))}
                 </ul>
@@ -90,18 +90,12 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
                   <AlertCircle className="h-5 w-5 text-amber-500" />
                   <h3 className="text-lg font-semibold">Primary Area to Focus On</h3>
                 </div>
-                <p className="font-medium">
-                  {typeof evaluationWeaknesses.mainWeakness === 'string' 
-                    ? evaluationWeaknesses.mainWeakness 
-                    : JSON.stringify(evaluationWeaknesses.mainWeakness)}
-                </p>
+                <p className="font-medium">{evaluationWeaknesses.mainWeakness}</p>
                 <div className="mt-2">
                   <p className="text-sm font-medium text-gray-600 mb-1">How to improve:</p>
                   <ol className="list-decimal ml-5 space-y-1">
                     {evaluationWeaknesses.improvementSteps.map((step, index) => (
-                      <li key={index} className="text-gray-700">
-                        {typeof step === 'string' ? step : JSON.stringify(step)}
-                      </li>
+                      <li key={index} className="text-gray-700">{step}</li>
                     ))}
                   </ol>
                 </div>
@@ -114,9 +108,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
                 <h3 className="text-lg font-semibold">Other Areas for Improvement</h3>
                 <ul className="list-disc pl-5 space-y-3">
                   {evaluationImprovements.map((improvement, index) => (
-                    <li key={index} className="text-gray-700">
-                      {typeof improvement === 'string' ? improvement : JSON.stringify(improvement)}
-                    </li>
+                    <li key={index} className="text-gray-700">{improvement}</li>
                   ))}
                 </ul>
               </div>
@@ -133,7 +125,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
                   {evaluationNextSteps.map((step, index) => (
                     <li key={index} className="text-gray-700 flex items-start gap-2">
                       <span className="font-medium text-blue-700 mt-0.5">#{index + 1}:</span>
-                      <p>{typeof step === 'string' ? step : JSON.stringify(step)}</p>
+                      <p>{step}</p>
                     </li>
                   ))}
                 </ul>
@@ -149,9 +141,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
                 </div>
                 <ul className="space-y-2">
                   {evaluationActionable.map((action, index) => (
-                    <li key={index} className="text-gray-700">
-                      {typeof action === 'string' ? action : JSON.stringify(action)}
-                    </li>
+                    <li key={index} className="text-gray-700">{action}</li>
                   ))}
                 </ul>
               </div>
