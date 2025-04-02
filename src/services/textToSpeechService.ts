@@ -59,7 +59,7 @@ export const convertTextToSpeech = async (
     // Process the audio content with extensive logging
     // const audioContent = response.data.audioContent;
     // console.log(`Audio content received, length: ${audioContent?.length || 0} characters`);
-    const audioBlob = new Blob([arraybuf]); 
+    const audioBlob = new Blob([audiobuf]); 
     console.log(audioBlob);
     var audioUrl = URL.createObjectURL(audioBlob);
 
