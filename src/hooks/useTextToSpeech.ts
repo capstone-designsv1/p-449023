@@ -1,4 +1,3 @@
-
 import { useState, useCallback } from "react";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { convertTextToSpeech, ElevenLabsVoice } from "@/services/textToSpeechService";
@@ -9,7 +8,8 @@ interface UseTextToSpeechProps {
   onSpeechEnd: () => void;
 }
 
-export { ElevenLabsVoice } from "@/services/textToSpeechService";
+// Use 'export type' for re-exporting types when isolatedModules is enabled
+export type { ElevenLabsVoice } from "@/services/textToSpeechService";
 
 export const useTextToSpeech = ({
   onSpeechStart,
