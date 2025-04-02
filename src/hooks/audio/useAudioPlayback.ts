@@ -52,9 +52,9 @@ export const useAudioPlayback = ({
       
       const audio = audioRef.current;
       
-      // Ensure src is set before attempting to play
-      if (!url) {
-        throw new Error("Invalid audio URL");
+      // Validate URL before using it
+      if (!url || !url.startsWith('blob:')) {
+        throw new Error("Invalid audio URL format");
       }
       
       audio.src = url;
@@ -75,6 +75,14 @@ export const useAudioPlayback = ({
         
         audio.addEventListener('loadedmetadata', loadHandler);
         audio.addEventListener('error', errorHandler);
+        
+        // Set a timeout to handle cases where audio loading hangs
+        const timeoutId = setTimeout(() => {
+          audio.removeEventListener('loadedmetadata', loadHandler);
+          audio.removeEventListener('error', errorHandler);
+          reject(new Error('Audio loading timed out'));
+        }, 10000); // 10 second timeout
+        
         audio.load();
       });
       

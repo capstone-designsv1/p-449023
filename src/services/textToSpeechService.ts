@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { base64ToBlob, createAudioUrl } from "@/utils/audioHelpers";
+import { base64ToBlob, createAudioUrl, isValidBase64 } from "@/utils/audioHelpers";
 import { toast } from "sonner";
 
 /**
@@ -53,8 +53,8 @@ export const convertTextToSpeech = async (
     console.log("Audio content length:", audioContent?.length || 0);
     
     // Validate base64 content
-    if (!audioContent || audioContent.trim() === '') {
-      throw new Error('Empty audio content received');
+    if (!audioContent || audioContent.trim() === '' || !isValidBase64(audioContent)) {
+      throw new Error('Invalid audio content received');
     }
     
     // Convert base64 to blob and create URL with proper error handling

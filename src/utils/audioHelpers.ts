@@ -21,6 +21,21 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 /**
+ * Validates if a string is a valid base64 encoding
+ */
+export function isValidBase64(str: string): boolean {
+  if (!str || typeof str !== 'string') return false;
+  
+  // Remove any whitespace
+  const trimmed = str.trim();
+  if (trimmed === '') return false;
+  
+  // Check if it's valid base64 pattern (might still fail on decoding, but basic check)
+  // Base64 uses characters A-Z, a-z, 0-9, +, /, and = for padding
+  return /^[A-Za-z0-9+/=]+$/.test(trimmed);
+}
+
+/**
  * Safely converts a base64 string to a Blob with error handling
  */
 export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Blob | null {
@@ -34,8 +49,21 @@ export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Bl
     // Clean the base64 string (remove any potential whitespace or line breaks)
     const cleanBase64 = base64.trim();
     
-    // Decode base64
-    const byteCharacters = atob(cleanBase64);
+    // Validate base64 content
+    if (!isValidBase64(cleanBase64)) {
+      console.error('Invalid base64 encoding detected');
+      return null;
+    }
+    
+    // Decode base64 with error handling
+    let byteCharacters;
+    try {
+      byteCharacters = atob(cleanBase64);
+    } catch (e) {
+      console.error('Base64 decoding failed:', e);
+      return null;
+    }
+    
     const byteNumbers = new Array(byteCharacters.length);
     
     // Convert to byte array
