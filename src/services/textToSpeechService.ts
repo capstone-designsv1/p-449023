@@ -1,103 +1,57 @@
+// src/services/textToSpeechService.ts - Updated implementation
+import { createClient } from '@supabase/supabase-js';
 
-import { supabase } from "@/integrations/supabase/client";
-import { base64ToBlob, createAudioUrl, isValidBase64 } from "@/utils/audioHelpers";
-import { toast } from "sonner";
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-/**
- * Voice options for text-to-speech
- */
-export type ElevenLabsVoice = 
-  | 'alloy'   // Rachel (female) - default
-  | 'echo'    // Charlie (male)
-  | 'fable'   // Domi (female)
-  | 'onyx'    // Adam (male)
-  | 'nova'    // Sarah (female)
-  | 'shimmer'  // Elli (female)
-  | 'custom'; // Custom voice ID
-
-interface TextToSpeechResponse {
-  audioUrl: string | null;
-  error: Error | null;
-}
-
-/**
- * Convert text to speech using Eleven Labs API via Supabase Edge Function
- */
-export const convertTextToSpeech = async (
-  text: string, 
-  customVoiceId?: string
-): Promise<TextToSpeechResponse> => {
+export async function convertTextToSpeech(text: string, voiceId: string, model: string = 'eleven_monolingual_v1') {
   try {
-    console.log(`Sending TTS request with text: ${text.substring(0, 50)}...`);
-    console.log(`Using voice ID: ${customVoiceId || "default"}`);
+    console.log(`Converting text to speech: "${text.substring(0, 20)}..."`, { voiceId, model });
     
-    // Call the Supabase Edge Function with proper error handling
-    const response = await supabase.functions.invoke('text-to-speech', {
-      body: { 
-        text, 
-        voice: customVoiceId // Pass the custom voice ID
-      }
+    // Generate a unique ID for this request
+    const requestId = `tts-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    
+    const { data, error } = await supabase.functions.invoke('text-to-speech', {
+      body: { text, voiceId, model, requestId },
     });
     
-    console.log("TTS response received:", response);
-    
-    if (response.error) {
-      console.error("Supabase function error:", response.error);
-      throw new Error(response.error.message || "Error from text-to-speech function");
+    if (error) {
+      console.error('TTS Edge Function error:', error);
+      throw new Error(`TTS Edge Function error: ${error.message}`);
     }
     
-    if (!response.data) {
-      console.error("No data received in response");
-      throw new Error('No response data received');
+    if (!data || !data.audio) {
+      console.error('Invalid TTS response:', data);
+      throw new Error('Invalid or empty response from TTS service');
     }
     
-    if (!response.data.audioContent) {
-      console.error("No audio content in response data");
-      throw new Error('No audio content received');
+    // Validate base64 string
+    const base64Regex = /^[A-Za-z0-9+/=]+$/;
+    if (!base64Regex.test(data.audio)) {
+      console.error('Invalid base64 data received');
+      throw new Error('Invalid base64 audio data received');
     }
     
-    // Process the audio content with extensive logging
-    const audioContent = response.data.audioContent;
-    console.log(`Audio content received, length: ${audioContent?.length || 0} characters`);
-    
-    // Enhanced validation for base64 content
-    if (!audioContent || audioContent.trim() === '') {
-      console.error("Empty audio content received");
-      throw new Error('Empty audio content received');
+    // Convert base64 to blob with proper validation
+    try {
+      const binaryString = atob(data.audio);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+      
+      // Create and return blob URL
+      const audioUrl = URL.createObjectURL(audioBlob);
+      console.log('Audio conversion successful, URL created:', audioUrl);
+      return audioUrl;
+    } catch (e) {
+      console.error('Base64 decoding error:', e);
+      throw new Error(`Failed to decode audio data: ${e.message}`);
     }
-    
-    if (!isValidBase64(audioContent)) {
-      console.error("Invalid base64 encoding in audio response");
-      throw new Error('Invalid audio content format received');
-    }
-    
-    // Convert base64 to blob and create URL with proper error handling
-    console.log("Converting base64 to blob...");
-    const blob = base64ToBlob(audioContent, 'audio/mp3');
-    if (!blob) {
-      console.error("Failed to convert base64 to blob");
-      throw new Error('Failed to convert audio content to blob');
-    }
-    
-    console.log(`Blob created successfully, size: ${blob.size} bytes`);
-    const url = createAudioUrl(blob);
-    if (!url) {
-      console.error("Failed to create audio URL from blob");
-      throw new Error('Failed to create audio URL');
-    }
-    
-    console.log("Created audio URL:", url);
-    
-    return {
-      audioUrl: url,
-      error: null
-    };
   } catch (error) {
-    console.error('Error converting text to speech:', error);
-    toast.error('Failed to convert text to speech');
-    return {
-      audioUrl: null,
-      error: error instanceof Error ? error : new Error(String(error))
-    };
+    console.error('Text-to-speech service error:', error);
+    throw error;
   }
-};
+}
