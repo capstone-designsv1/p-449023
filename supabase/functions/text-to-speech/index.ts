@@ -8,19 +8,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Process binary to base64 in chunks to prevent stack overflow
+// Process binary to base64 in chunks to prevent stack overflow and ensure valid encoding
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
   const chunkSize = 8192; // Process in smaller chunks to avoid stack overflow
   let base64 = '';
   
-  for (let i = 0; i < bytes.length; i += chunkSize) {
-    const chunk = bytes.slice(i, Math.min(i + chunkSize, bytes.length));
-    const binaryChunk = Array.from(chunk).map(b => String.fromCharCode(b)).join('');
-    base64 += btoa(binaryChunk);
+  try {
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, Math.min(i + chunkSize, bytes.length));
+      const binaryChunk = Array.from(chunk).map(b => String.fromCharCode(b)).join('');
+      base64 += btoa(binaryChunk);
+    }
+    
+    // Validate that the resulting base64 string is valid
+    if (!base64 || /[^A-Za-z0-9+/=]/.test(base64)) {
+      throw new Error("Generated invalid base64 string");
+    }
+    
+    return base64;
+  } catch (error) {
+    console.error("Error encoding to base64:", error);
+    throw new Error("Failed to encode audio data to base64");
   }
-  
-  return base64;
 }
 
 serve(async (req) => {
@@ -77,22 +87,27 @@ serve(async (req) => {
     
     console.log(`Received audio data of size: ${audioBuffer.byteLength} bytes`);
     
-    // Convert binary to base64 using our chunked method
-    const base64Audio = arrayBufferToBase64(audioBuffer);
-    console.log(`Converted to base64 string of length: ${base64Audio.length}`);
-    
-    if (!base64Audio || base64Audio.length === 0) {
-      throw new Error("Failed to convert audio to base64");
+    try {
+      // Convert binary to base64 using our chunked method with validation
+      const base64Audio = arrayBufferToBase64(audioBuffer);
+      console.log(`Converted to base64 string of length: ${base64Audio.length}`);
+      
+      if (!base64Audio || base64Audio.length === 0) {
+        throw new Error("Failed to convert audio to base64");
+      }
+      
+      console.log("Text-to-speech conversion successful");
+  
+      return new Response(
+        JSON.stringify({ audioContent: base64Audio }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
+      );
+    } catch (encodingError) {
+      console.error("Error encoding audio:", encodingError);
+      throw new Error("Failed to encode audio response");
     }
-    
-    console.log("Text-to-speech conversion successful");
-
-    return new Response(
-      JSON.stringify({ audioContent: base64Audio }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      },
-    );
   } catch (error) {
     console.error("Error in text-to-speech function:", error);
     return new Response(

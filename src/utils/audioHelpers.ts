@@ -21,26 +21,41 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
 }
 
 /**
- * Converts a base64 string to a Blob
+ * Safely converts a base64 string to a Blob with error handling
  */
-export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Blob {
-  // Decode base64
-  const byteCharacters = atob(base64);
-  const byteNumbers = new Array(byteCharacters.length);
-  
-  // Convert to byte array
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
+export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Blob | null {
+  try {
+    // Check if the base64 string is valid
+    if (!base64 || typeof base64 !== 'string') {
+      console.error('Invalid base64 string provided');
+      return null;
+    }
+    
+    // Clean the base64 string (remove any potential whitespace or line breaks)
+    const cleanBase64 = base64.trim();
+    
+    // Decode base64
+    const byteCharacters = atob(cleanBase64);
+    const byteNumbers = new Array(byteCharacters.length);
+    
+    // Convert to byte array
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+  } catch (error) {
+    console.error('Failed to convert base64 to blob:', error);
+    return null;
   }
-  
-  const byteArray = new Uint8Array(byteNumbers);
-  return new Blob([byteArray], { type: mimeType });
 }
 
 /**
  * Creates a URL object from a blob
  */
-export function createAudioUrl(blob: Blob): string {
+export function createAudioUrl(blob: Blob | null): string | null {
+  if (!blob) return null;
   return URL.createObjectURL(blob);
 }
 

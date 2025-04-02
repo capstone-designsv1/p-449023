@@ -50,16 +50,23 @@ export const convertTextToSpeech = async (
     
     // Process the audio content
     const audioContent = response.data.audioContent;
-    console.log("Audio content length:", audioContent.length);
+    console.log("Audio content length:", audioContent?.length || 0);
     
     // Validate base64 content
     if (!audioContent || audioContent.trim() === '') {
       throw new Error('Empty audio content received');
     }
     
-    // Convert base64 to blob and create URL
+    // Convert base64 to blob and create URL with proper error handling
     const blob = base64ToBlob(audioContent, 'audio/mp3');
+    if (!blob) {
+      throw new Error('Failed to convert audio content to blob');
+    }
+    
     const url = createAudioUrl(blob);
+    if (!url) {
+      throw new Error('Failed to create audio URL');
+    }
     
     console.log("Created audio URL:", url);
     
