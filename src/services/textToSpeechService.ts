@@ -45,11 +45,6 @@ export const convertTextToSpeech = async (
       console.error("Supabase function error:", response.error);
       throw new Error(response.error.message || "Error from text-to-speech function");
     }
-
-    if (!response.ok) {
-      console.error("Supabase function error:", response.error);
-      throw new Error(response.error.message || "Error from ok text-to-speech function");
-    }
     
     // if (!response.data) {
     //   console.error("No data received in response");
