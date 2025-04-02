@@ -24,40 +24,26 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
  * Validates if a string is a valid base64 encoding
  */
 export function isValidBase64(str: string): boolean {
-  if (!str || typeof str !== 'string') return false;
+  if (!str || typeof str !== 'string') {
+    console.error("Invalid base64 input: not a string or empty");
+    return false;
+  }
   
   // Remove any whitespace
   const trimmed = str.trim();
-  if (trimmed === '') return false;
+  if (trimmed === '') {
+    console.error("Empty base64 string after trimming");
+    return false;
+  }
   
   // Check basic length requirements (must be multiple of 4)
   if (trimmed.length % 4 !== 0) {
-    console.warn("Base64 string length not multiple of 4:", trimmed.length);
+    console.warn(`Base64 string length (${trimmed.length}) not multiple of 4`);
   }
   
   // Check if it's valid base64 pattern
   // Base64 uses characters A-Z, a-z, 0-9, +, /, and = for padding
-  if (!/^[A-Za-z0-9+/=]+$/.test(trimmed)) {
-    console.error("Invalid characters in base64 string");
-    return false;
-  }
-  
-  // Check padding - if present, must be at the end and 1-2 characters
-  const paddingMatch = trimmed.match(/=*$/);
-  if (paddingMatch && paddingMatch[0].length > 0) {
-    if (paddingMatch[0].length > 2) {
-      console.error("Too many padding characters in base64 string");
-      return false;
-    }
-    
-    // Check if padding is only at the end
-    if (trimmed.indexOf('=') !== trimmed.length - paddingMatch[0].length) {
-      console.error("Padding characters must be at the end of base64 string");
-      return false;
-    }
-  }
-  
-  return true;
+  return /^[A-Za-z0-9+/=]+$/.test(trimmed);
 }
 
 /**
@@ -65,6 +51,8 @@ export function isValidBase64(str: string): boolean {
  */
 export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Blob | null {
   try {
+    console.log(`Converting base64 to blob. Length: ${base64?.length || 0}`);
+    
     // Check if the base64 string is valid
     if (!base64 || typeof base64 !== 'string') {
       console.error('Invalid base64 string provided');
@@ -84,6 +72,7 @@ export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Bl
     let byteCharacters;
     try {
       byteCharacters = atob(cleanBase64);
+      console.log(`Successfully decoded base64, character length: ${byteCharacters.length}`);
     } catch (e) {
       console.error('Base64 decoding failed:', e);
       return null;
@@ -108,8 +97,19 @@ export function base64ToBlob(base64: string, mimeType: string = 'audio/mp3'): Bl
  * Creates a URL object from a blob
  */
 export function createAudioUrl(blob: Blob | null): string | null {
-  if (!blob) return null;
-  return URL.createObjectURL(blob);
+  if (!blob) {
+    console.error("Cannot create URL: Blob is null");
+    return null;
+  }
+  
+  try {
+    const url = URL.createObjectURL(blob);
+    console.log(`Created blob URL: ${url}`);
+    return url;
+  } catch (error) {
+    console.error("Failed to create object URL:", error);
+    return null;
+  }
 }
 
 /**
@@ -117,6 +117,11 @@ export function createAudioUrl(blob: Blob | null): string | null {
  */
 export function revokeAudioUrl(url: string | null): void {
   if (url) {
-    URL.revokeObjectURL(url);
+    console.log(`Revoking URL: ${url}`);
+    try {
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error revoking URL:", error);
+    }
   }
 }

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from "react";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { convertTextToSpeech, ElevenLabsVoice } from "@/services/textToSpeechService";
@@ -35,26 +36,36 @@ export const useTextToSpeech = ({
 
   // Text to speech conversion and playback
   const speakText = useCallback(async (text: string) => {
-    if (!text || isSpeaking) return;
+    if (!text || isSpeaking) {
+      console.log(`Cannot speak text: ${!text ? 'Empty text' : 'Already speaking'}`);
+      return;
+    }
     
     try {
+      console.log(`Speaking text (length ${text.length}): "${text.substring(0, 50)}..."`);
       onSpeechStart();
       
       // Convert text to speech and get audio URL
+      console.log(`Using voice: ${currentVoice}, voice ID: ${customVoiceId}`);
       const { audioUrl, error } = await convertTextToSpeech(text, customVoiceId);
       
       if (error || !audioUrl) {
-        throw new Error(error?.message || "Failed to convert text to speech");
+        const errorMessage = error?.message || "Failed to convert text to speech";
+        console.error(`TTS error: ${errorMessage}`);
+        throw new Error(errorMessage);
       }
+      
+      console.log(`TTS successful, playing audio URL: ${audioUrl}`);
       
       // Play the audio
       await playAudio(audioUrl);
+      console.log("Audio playback initiated");
     } catch (error) {
       console.error('Error speaking text:', error);
       toast.error('Failed to convert text to speech. Please try again.');
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd, playAudio, customVoiceId]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, playAudio, currentVoice, customVoiceId]);
 
   return {
     isSpeaking,
