@@ -71,11 +71,19 @@ serve(async (req) => {
 
     // The response contains the audio as binary data
     const audioBuffer = await response.arrayBuffer();
+    if (!audioBuffer || audioBuffer.byteLength === 0) {
+      throw new Error("Received empty audio buffer from ElevenLabs API");
+    }
+    
     console.log(`Received audio data of size: ${audioBuffer.byteLength} bytes`);
     
     // Convert binary to base64 using our chunked method
     const base64Audio = arrayBufferToBase64(audioBuffer);
     console.log(`Converted to base64 string of length: ${base64Audio.length}`);
+    
+    if (!base64Audio || base64Audio.length === 0) {
+      throw new Error("Failed to convert audio to base64");
+    }
     
     console.log("Text-to-speech conversion successful");
 
