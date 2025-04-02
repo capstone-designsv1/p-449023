@@ -1,0 +1,46 @@
+import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
+
+// This edge function helps diagnose encoding issues
+serve(async (req) => {
+  try {
+    const { text } = await req.json();
+    
+    // Create test audio data - a simple sine wave as MP3
+    // This is just placeholder binary data for testing
+    const testAudioBytes = new Uint8Array([
+      255, 251, 48, 196, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+      // ... more bytes would go here in a real MP3
+    ]);
+    
+    // Create responses in different formats to test which one works
+    const formats = {
+      // Format 1: Standard base64 encoding
+      standard: btoa(String.fromCharCode(...testAudioBytes)),
+      
+      // Format 2: Base64 with manual encoding using Deno's encoding API
+      denoEncoded: (new TextEncoder().encode(
+        String.fromCharCode(...testAudioBytes)
+      )).toString(),
+      
+      // Format 3: Plain text string (for testing)
+      text: text || "Test audio data",
+      
+      // Diagnostic info
+      info: {
+        requestTimestamp: new Date().toISOString(),
+        environment: Deno.env.get('ENVIRONMENT') || 'unknown',
+        testAudioLength: testAudioBytes.length
+      }
+    };
+    
+    return new Response(
+      JSON.stringify(formats),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: `Diagnostic error: ${error.message}` }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+});
