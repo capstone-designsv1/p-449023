@@ -55,7 +55,7 @@ export const convertTextToSpeech = async (
     //   console.error("No audio content in response data");
     //   throw new Error('No audio content received');
     // }
-    const audiobuf = await response.arrayBuffer();
+    const audiobuf = response.data;
     // Process the audio content with extensive logging
     const audioContent = response.data.audioContent;
     console.log(`Audio content received, length: ${audioContent?.length || 0} characters`);
