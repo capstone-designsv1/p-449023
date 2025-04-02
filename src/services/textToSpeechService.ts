@@ -57,11 +57,13 @@ export const convertTextToSpeech = async (
     // }
     const audiobuf = response.data;
     // Process the audio content with extensive logging
-    const audioContent = response.data.audioContent;
-    console.log(`Audio content received, length: ${audioContent?.length || 0} characters`);
+    // const audioContent = response.data.audioContent;
+    // console.log(`Audio content received, length: ${audioContent?.length || 0} characters`);
     const audioBlob = new Blob([arraybuf]); 
     console.log(audioBlob);
     var audioUrl = URL.createObjectURL(audioBlob);
+
+    console.log(audioUrl);
     // Enhanced validation for base64 content
     // if (!audioContent || audioContent.trim() === '') {
     //   console.error("Empty audio content received");
