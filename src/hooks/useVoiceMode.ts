@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
-import { useTextToSpeech, ElevenLabsVoice } from "./useTextToSpeech";
+import { useTextToSpeech } from "./useTextToSpeech";
 import { ChatMessage } from "@/services/interviewChatService";
 
 interface UseVoiceModeProps {
@@ -166,7 +166,6 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
     toggleSpeaking,
     toggleAutoSpeak,
     isAutoSpeakEnabled: autoSpeakEnabledRef.current,
-    // Keep changeVoice in the returned object for backward compatibility
     changeVoice
   };
 };
