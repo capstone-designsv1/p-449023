@@ -52,9 +52,14 @@ export const convertTextToSpeech = async (
     const audioContent = response.data.audioContent;
     console.log("Audio content length:", audioContent?.length || 0);
     
-    // Validate base64 content
-    if (!audioContent || audioContent.trim() === '' || !isValidBase64(audioContent)) {
-      throw new Error('Invalid audio content received');
+    // Enhanced validation for base64 content
+    if (!audioContent || audioContent.trim() === '') {
+      throw new Error('Empty audio content received');
+    }
+    
+    if (!isValidBase64(audioContent)) {
+      console.error("Invalid base64 encoding in audio response");
+      throw new Error('Invalid audio content format received');
     }
     
     // Convert base64 to blob and create URL with proper error handling

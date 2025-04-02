@@ -30,9 +30,34 @@ export function isValidBase64(str: string): boolean {
   const trimmed = str.trim();
   if (trimmed === '') return false;
   
-  // Check if it's valid base64 pattern (might still fail on decoding, but basic check)
+  // Check basic length requirements (must be multiple of 4)
+  if (trimmed.length % 4 !== 0) {
+    console.warn("Base64 string length not multiple of 4:", trimmed.length);
+  }
+  
+  // Check if it's valid base64 pattern
   // Base64 uses characters A-Z, a-z, 0-9, +, /, and = for padding
-  return /^[A-Za-z0-9+/=]+$/.test(trimmed);
+  if (!/^[A-Za-z0-9+/=]+$/.test(trimmed)) {
+    console.error("Invalid characters in base64 string");
+    return false;
+  }
+  
+  // Check padding - if present, must be at the end and 1-2 characters
+  const paddingMatch = trimmed.match(/=*$/);
+  if (paddingMatch && paddingMatch[0].length > 0) {
+    if (paddingMatch[0].length > 2) {
+      console.error("Too many padding characters in base64 string");
+      return false;
+    }
+    
+    // Check if padding is only at the end
+    if (trimmed.indexOf('=') !== trimmed.length - paddingMatch[0].length) {
+      console.error("Padding characters must be at the end of base64 string");
+      return false;
+    }
+  }
+  
+  return true;
 }
 
 /**
