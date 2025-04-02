@@ -1,169 +1,83 @@
-import { useCallback } from "react";
-import { toast } from "sonner";
+// src/hooks/audio/useAudioPlayback.ts - Updated implementation
+import { useState, useRef, useEffect } from 'react';
 
-
-interface UseAudioPlaybackProps {
- audioRef: React.MutableRefObject<HTMLAudioElement | null>;
- audioUrlRef: React.MutableRefObject<string | null>;
- isPlaying: boolean;
- setIsPlaying: (isPlaying: boolean) => void;
- handleAudioEnded: (e: Event) => void;
- handleAudioError: (e: Event) => void;
- cleanupAudioResources: () => void;
- onPlaybackStart?: () => void;
- onPlaybackEnd?: () => void;
+export function useAudioPlayback() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioUrlRef = useRef<string | null>(null);
+  
+  // Clean up previous audio URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+        audioUrlRef.current = null;
+      }
+    };
+  }, []);
+  
+  const playAudio = (audioUrl: string) => {
+    setError(null);
+    setIsPending(true);
+    
+    try {
+      // Clean up previous audio URL if it exists
+      if (audioUrlRef.current) {
+        URL.revokeObjectURL(audioUrlRef.current);
+      }
+      
+      // Store the new URL
+      audioUrlRef.current = audioUrl;
+      
+      // Create a new audio element each time
+      const audio = new Audio(audioUrl);
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setError('Failed to play audio. Please try again.');
+        setIsPlaying(false);
+        setIsPending(false);
+      };
+      
+      audio.oncanplaythrough = () => {
+        setIsPending(false);
+        setIsPlaying(true);
+        audio.play().catch(e => {
+          console.error('Audio play error:', e);
+          setError(`Play error: ${e.message}`);
+          setIsPlaying(false);
+          setIsPending(false);
+        });
+      };
+      
+      audio.onended = () => {
+        setIsPlaying(false);
+      };
+      
+      // Store reference to the audio element
+      audioRef.current = audio;
+    } catch (e) {
+      console.error('Audio setup error:', e);
+      setError(`Audio setup error: ${e.message}`);
+      setIsPlaying(false);
+      setIsPending(false);
+    }
+  };
+  
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  };
+  
+  return {
+    playAudio,
+    stopAudio,
+    isPlaying,
+    isPending,
+    error
+  };
 }
-/**
-* Hook to manage audio playback controls
-*/
-export const useAudioPlayback = ({
- audioRef,
- audioUrlRef,
- isPlaying,
- setIsPlaying,
- handleAudioEnded,
- handleAudioError,
- cleanupAudioResources,
- onPlaybackStart,
- onPlaybackEnd
-}: UseAudioPlaybackProps) => {
-  // Play audio with a given URL
- const playAudio = useCallback(async (url: string): Promise<void> => {
-   if (!url || isPlaying) return;
-  
-   // Clean up any existing audio
-   cleanupAudioResources();
-  
-   try {
-     setIsPlaying(true);
-     if (onPlaybackStart) onPlaybackStart();
-    
-     // Set new URL
-     audioUrlRef.current = url;
-    
-     // Ensure we have a valid audio element
-     if (!audioRef.current) {
-       audioRef.current = new Audio();
-       audioRef.current.addEventListener('ended', handleAudioEnded);
-       audioRef.current.addEventListener('error', handleAudioError);
-     }
-    
-     const audio = audioRef.current;
-    
-     // Validate URL before using it
-     if (!url || !url.startsWith('blob:')) {
-       throw new Error("Invalid audio URL format");
-     }
-    
-     audio.src = url;
-    
-     // Wait for audio to be loaded
-     await new Promise<void>((resolve, reject) => {
-       const loadHandler = () => {
-         audio.removeEventListener('loadedmetadata', loadHandler);
-         audio.removeEventListener('error', errorHandler);
-         resolve();
-       };
-      
-       const errorHandler = (e: Event) => {
-         audio.removeEventListener('loadedmetadata', loadHandler);
-         audio.removeEventListener('error', errorHandler);
-         reject(new Error(`Audio load error: ${audio.error?.message || 'Unknown error'}`));
-       };
-      
-       audio.addEventListener('loadedmetadata', loadHandler);
-       audio.addEventListener('error', errorHandler);
-      
-       // Set a timeout to handle cases where audio loading hangs
-       const timeoutId = setTimeout(() => {
-         audio.removeEventListener('loadedmetadata', loadHandler);
-         audio.removeEventListener('error', errorHandler);
-         reject(new Error('Audio loading timed out'));
-       }, 10000); // 10 second timeout
-      
-       audio.load();
-     });
-    
-     // Use a user interaction detection to handle autoplay restrictions
-     const userInteracted = document.documentElement.hasAttribute('data-user-interacted');
-    
-     if (!userInteracted) {
-       // If no interaction detected, show a message prompting user action
-       toast.info("Click anywhere to enable audio playback");
-      
-       // Mark that we've shown this message
-       document.documentElement.setAttribute('data-user-interacted', 'true');
-      
-       // Wait for user interaction before playing
-       const playOnInteraction = () => {
-         const playPromise = audio.play();
-         if (playPromise) {
-           playPromise.catch((error) => {
-             console.error("Autoplay prevented:", error);
-             toast.error("Please click to enable audio playback");
-           });
-         }
-         document.removeEventListener('click', playOnInteraction);
-       };
-      
-       document.addEventListener('click', playOnInteraction, { once: true });
-     } else {
-       // Attempt to play with proper error handling
-       const playPromise = audio.play();
-      
-       if (playPromise !== undefined) {
-         playPromise.catch(error => {
-           console.error("Play promise error:", error);
-          
-           // If autoplay failed due to browser restrictions, show a helpful message
-           if (error.name === 'NotAllowedError') {
-             toast.error("Browser blocked autoplay. Please click anywhere to enable audio.");
-            
-             // Set up a one-time click handler to play audio
-             const clickHandler = () => {
-               audio.play().catch(e => console.error("Play after click failed:", e));
-               document.removeEventListener('click', clickHandler);
-             };
-            
-             document.addEventListener('click', clickHandler, { once: true });
-           } else {
-             toast.error("Failed to play audio. Please try again.");
-           }
-          
-           cleanupAudioResources();
-           setIsPlaying(false);
-           if (onPlaybackEnd) onPlaybackEnd();
-         });
-       }
-     }
-   } catch (error) {
-     console.error('Error playing audio:', error);
-     toast.error('Failed to play audio. Please try again.');
-     cleanupAudioResources();
-     setIsPlaying(false);
-     if (onPlaybackEnd) onPlaybackEnd();
-   }
- }, [isPlaying, onPlaybackStart, onPlaybackEnd, audioRef, audioUrlRef, cleanupAudioResources, handleAudioEnded, handleAudioError, setIsPlaying]);
-
-
- // Stop audio playback
- const stopAudio = useCallback(() => {
-   if (audioRef.current && !audioRef.current.paused) {
-     console.log("Stopping audio playback");
-     audioRef.current.pause();
-     audioRef.current.currentTime = 0;
-    
-     cleanupAudioResources();
-     setIsPlaying(false);
-     if (onPlaybackEnd) onPlaybackEnd();
-     console.log("Audio playback stopped");
-   }
- }, [audioRef, onPlaybackEnd, cleanupAudioResources, setIsPlaying]);
-
-
- return {
-   playAudio,
-   stopAudio
- };
-};
-
