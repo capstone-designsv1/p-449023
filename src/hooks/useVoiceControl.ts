@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 
@@ -24,7 +25,6 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
     toggleVoiceMode,
     toggleListening,
     toggleSpeaking
@@ -37,13 +37,10 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
     inputText,
     setInputText,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking,
-    // Keep changeVoice in the returned object for backward compatibility
-    changeVoice: () => {} // No-op since we're using a fixed voice
+    toggleSpeaking
   };
 };

@@ -1,14 +1,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useVoiceMode } from "./useVoiceMode";
-import { ElevenLabsVoice } from "./useTextToSpeech";
 import { 
   ChatMessage, 
   initializeChat, 
   sendMessageToAI, 
   endSession 
 } from "@/services/interviewChatService";
-import { toast } from "sonner";
 
 interface UseInterviewChatProps {
   companyName: string;
@@ -59,11 +57,9 @@ export const useInterviewChat = ({
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking,
-    changeVoice
+    toggleSpeaking
   } = useVoiceMode({
     chatHistory,
     onMessageReady: handleSendVoiceMessage
@@ -172,12 +168,13 @@ export const useInterviewChat = ({
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
     handleSendMessage,
     handleEndSession,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking,
-    changeVoice
+    toggleSpeaking
   };
 };
+
+// Add missing import
+import { toast } from "sonner";

@@ -140,9 +140,7 @@ The challenge should be specific to ${companyName}'s product space and business.
 
 Make the challenge realistic but concise. Ask one clear question to get the candidate started.
 
-IMPORTANT: Keep your response conversational, friendly, and encouraging, but professional. Don't provide guidance on how to answer - this is an assessment.
-
-CRUCIAL: Your response must be less than 300 characters. Be very brief and direct.`;
+IMPORTANT: Keep your response conversational, friendly, and encouraging, but professional. Don't provide guidance on how to answer - this is an assessment.`;
 }
 
 // Helper function to get the continuation prompt
@@ -169,8 +167,6 @@ IMPORTANT GUIDELINES:
 - Ask one clear question at a time
 - Don't solve the problem for them
 - Be conversational and natural, as in a real interview
-
-CRUCIAL: Your response must be less than 300 characters. Be very brief and direct.
 
 Respond as you would in a real interview situation.`;
 }
@@ -200,9 +196,7 @@ Focus your evaluation on:
 - Handling of ambiguity
 - Technical design knowledge appropriate for ${designLevel} level
 
-Make your feedback constructive, balanced, and actionable. Be honest but encouraging.
-
-CRUCIAL: Your response must be less than 300 characters. Be very brief and direct. Only include the most essential feedback.`;
+Make your feedback constructive, balanced, and actionable. Be honest but encouraging.`;
 }
 
 // Helper function to format chat history
@@ -230,7 +224,7 @@ async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<a
         temperature: 0.7,
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 100, // Reduced from 1024 to limit the output to approximately 300 characters
+        maxOutputTokens: 1024,
       }
     };
 
@@ -268,14 +262,7 @@ async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<a
       throw new Error("No response from Gemini API");
     }
     
-    let message = data.candidates[0].content.parts[0].text;
-    
-    // Add an additional check to truncate if the message exceeds 300 characters
-    if (message.length > 300) {
-      console.log(`Message exceeded 300 characters (${message.length}). Truncating...`);
-      message = message.substring(0, 297) + "...";
-    }
-    
+    const message = data.candidates[0].content.parts[0].text;
     return { message };
   } catch (error) {
     if (retryCount < MAX_RETRIES - 1) {
@@ -290,7 +277,7 @@ async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<a
     
     // Return a fallback response based on the action (basic interviewer message)
     return { 
-      message: "I'm currently experiencing technical difficulties. Let's proceed with our design interview: Could you tell me about your design process?"
+      message: "I'm currently experiencing technical difficulties. Let's proceed with our design interview: Could you tell me about your design process and how you approach user research?"
     };
   }
 }

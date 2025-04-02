@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
@@ -12,8 +13,6 @@ interface UseVoiceModeProps {
 export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps) => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const lastAssistantMessageRef = useRef<string | null>(null);
-  const isInitializedRef = useRef(false);
-  const autoSpeakEnabledRef = useRef(true);
   
   // Handlers for speech-to-text and text-to-speech events
   const handleTranscriptReady = (text: string) => {
@@ -25,7 +24,7 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
   
   const handleSpeechStart = () => {
     console.log("Voice mode: AI speaking started");
-    toast.info("AI is speaking...", { id: "ai-speaking" });
+    toast.info("AI is speaking...");
   };
   
   const handleSpeechEnd = () => {
@@ -43,8 +42,6 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
 
   const {
     isSpeaking,
-    currentVoice,
-    changeVoice,
     speakText,
     stopSpeaking
   } = useTextToSpeech({
@@ -54,44 +51,16 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
 
   // Auto-speak AI responses when in voice mode
   useEffect(() => {
-    if (isVoiceMode && chatHistory.length > 0 && isInitializedRef.current && autoSpeakEnabledRef.current) {
+    if (isVoiceMode && chatHistory.length > 0) {
       const lastMessage = chatHistory[chatHistory.length - 1];
-      
       // Only auto-speak new assistant messages
       if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
         console.log("Voice mode: New assistant message detected, auto-speaking");
         lastAssistantMessageRef.current = lastMessage.content;
-        
-        // Set a flag for user interaction if needed
-        document.documentElement.setAttribute('data-user-interacted', 'true');
-        
-        // Short delay to ensure UI is ready
-        setTimeout(() => {
-          speakText(lastMessage.content)
-            .catch(error => {
-              console.error("Failed to auto-speak message:", error);
-              toast.error("Couldn't play audio automatically. Click 'Hear Response' to try again.");
-            });
-        }, 300);
+        speakText(lastMessage.content);
       }
     }
   }, [chatHistory, isVoiceMode, speakText]);
-  
-  // Set initialized after first render
-  useEffect(() => {
-    isInitializedRef.current = true;
-    
-    // Add a click listener to document to handle user interaction requirement
-    const handleUserInteraction = () => {
-      document.documentElement.setAttribute('data-user-interacted', 'true');
-    };
-    
-    document.addEventListener('click', handleUserInteraction);
-    
-    return () => {
-      document.removeEventListener('click', handleUserInteraction);
-    };
-  }, []);
 
   // Toggle voice mode on/off
   const toggleVoiceMode = () => {
@@ -102,9 +71,6 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
           setIsVoiceMode(true);
           toast.success("Voice mode enabled");
           console.log("Voice mode enabled");
-          
-          // Mark that user has interacted with the page
-          document.documentElement.setAttribute('data-user-interacted', 'true');
         })
         .catch((err) => {
           console.error("Microphone permission denied:", err);
@@ -141,31 +107,17 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
       const lastAssistantMessage = [...chatHistory].reverse().find(msg => msg.role === 'assistant');
       if (lastAssistantMessage) {
         console.log("Voice mode: Speaking last assistant message");
-        
-        // Mark that user has interacted with the page
-        document.documentElement.setAttribute('data-user-interacted', 'true');
-        
         speakText(lastAssistantMessage.content);
       }
     }
-  };
-
-  // Toggle auto-speak feature
-  const toggleAutoSpeak = () => {
-    autoSpeakEnabledRef.current = !autoSpeakEnabledRef.current;
-    toast.info(`Auto-speak ${autoSpeakEnabledRef.current ? 'enabled' : 'disabled'}`);
   };
 
   return {
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking,
-    toggleAutoSpeak,
-    isAutoSpeakEnabled: autoSpeakEnabledRef.current,
-    changeVoice
+    toggleSpeaking
   };
 };
