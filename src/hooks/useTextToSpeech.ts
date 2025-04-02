@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from "react";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
-import { convertTextToSpeech, ElevenLabsVoice } from "@/services/textToSpeechService";
+import { convertTextToSpeech } from "@/services/textToSpeechService";
 import { toast } from "sonner";
 
 interface UseTextToSpeechProps {
@@ -9,8 +9,8 @@ interface UseTextToSpeechProps {
   onSpeechEnd: () => void;
 }
 
-// Use 'export type' for re-exporting types when isolatedModules is enabled
-export type { ElevenLabsVoice } from "@/services/textToSpeechService";
+// Define ElevenLabsVoice type
+export type ElevenLabsVoice = 'adam' | 'antoni' | 'arnold' | 'bella' | 'domi' | 'elli' | 'josh' | 'rachel' | 'sam' | 'custom';
 
 export const useTextToSpeech = ({
   onSpeechStart,
@@ -47,12 +47,10 @@ export const useTextToSpeech = ({
       
       // Convert text to speech and get audio URL
       console.log(`Using voice: ${currentVoice}, voice ID: ${customVoiceId}`);
-      const { audioUrl, error } = await convertTextToSpeech(text, customVoiceId);
+      const audioUrl = await convertTextToSpeech(text, customVoiceId);
       
-      if (error || !audioUrl) {
-        const errorMessage = error?.message || "Failed to convert text to speech";
-        console.error(`TTS error: ${errorMessage}`);
-        throw new Error(errorMessage);
+      if (!audioUrl) {
+        throw new Error("Failed to convert text to speech");
       }
       
       console.log(`TTS successful, playing audio URL: ${audioUrl}`);
