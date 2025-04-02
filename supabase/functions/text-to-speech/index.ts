@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const ELEVEN_LABS_API_KEY = Deno.env.get('ELEVEN_LABS_API_KEY');
@@ -7,10 +8,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Improved base64 encoding function
+// Process binary to base64 in chunks with improved validation
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
-  const chunkSize = 3 * 1024; // Use a multiple of 3 to avoid padding issues
+  const chunkSize = 4096; // Smaller chunk size for more reliable processing
   let base64 = '';
   
   try {
@@ -26,6 +27,17 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
         console.error("Error encoding chunk to base64:", encodeError);
         throw new Error(`Failed to encode audio chunk at position ${i}`);
       }
+    }
+    
+    // Validate the resulting base64 string
+    if (!base64) {
+      throw new Error("Generated empty base64 string");
+    }
+    
+    // Check for valid base64 characters only
+    if (!/^[A-Za-z0-9+/=]+$/.test(base64)) {
+      console.error("Invalid characters detected in base64 output");
+      throw new Error("Generated invalid base64 string");
     }
     
     return base64;
@@ -89,30 +101,24 @@ serve(async (req) => {
     
     console.log(`Received audio data of size: ${audioBuffer.byteLength} bytes`);
     
-    // Instead of converting to base64, return the audio data directly as an audio/mpeg response
-    // This approach avoids base64 encoding/decoding issues entirely
-    if (req.headers.get('accept') === 'audio/mpeg') {
-      console.log("Returning audio data directly as audio/mpeg");
-      return new Response(audioBuffer, {
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'audio/mpeg',
-          'Content-Length': audioBuffer.byteLength.toString()
-        },
-      });
-    }
-    
-    // If client expects JSON with base64, provide that
     try {
+      // Convert binary to base64 using our improved chunked method with validation
       const base64Audio = arrayBufferToBase64(audioBuffer);
       console.log(`Converted to base64 string of length: ${base64Audio.length}`);
       
-      // Return base64 data with proper data URI prefix for direct browser usage
+      if (!base64Audio || base64Audio.length === 0) {
+        throw new Error("Failed to convert audio to base64");
+      }
+      
+      // Additional validation - ensure the string meets Base64 format requirements
+      if (base64Audio.length % 4 !== 0) {
+        console.warn("Base64 string length is not a multiple of 4, padding may be incorrect");
+      }
+      
+      console.log("Text-to-speech conversion successful");
+  
       return new Response(
-        JSON.stringify({ 
-          audioContent: base64Audio,
-          audioDataUri: `data:audio/mpeg;base64,${base64Audio}`
-        }),
+        JSON.stringify({ audioContent: base64Audio }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         },
@@ -132,4 +138,3 @@ serve(async (req) => {
     );
   }
 });
-
