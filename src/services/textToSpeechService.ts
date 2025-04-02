@@ -45,51 +45,58 @@ export const convertTextToSpeech = async (
       console.error("Supabase function error:", response.error);
       throw new Error(response.error.message || "Error from text-to-speech function");
     }
-    
-    if (!response.data) {
-      console.error("No data received in response");
-      throw new Error('No response data received');
+
+    if (!response.ok) {
+      console.error("Supabase function error:", response.error);
+      throw new Error(response.error.message || "Error from ok text-to-speech function");
     }
     
-    if (!response.data.audioContent) {
-      console.error("No audio content in response data");
-      throw new Error('No audio content received');
-    }
+    // if (!response.data) {
+    //   console.error("No data received in response");
+    //   throw new Error('No response data received');
+    // }
     
+    // if (!response.data.audioContent) {
+    //   console.error("No audio content in response data");
+    //   throw new Error('No audio content received');
+    // }
+    const audiobuf = await response.arrayBuffer();
     // Process the audio content with extensive logging
     const audioContent = response.data.audioContent;
     console.log(`Audio content received, length: ${audioContent?.length || 0} characters`);
-    
+    const audioBlob = new Blob([arraybuf]); 
+    console.log(audioBlob);
+    var audioUrl = URL.createObjectURL(audioBlob);
     // Enhanced validation for base64 content
-    if (!audioContent || audioContent.trim() === '') {
-      console.error("Empty audio content received");
-      throw new Error('Empty audio content received');
-    }
+    // if (!audioContent || audioContent.trim() === '') {
+    //   console.error("Empty audio content received");
+    //   throw new Error('Empty audio content received');
+    // }
     
-    if (!isValidBase64(audioContent)) {
-      console.error("Invalid base64 encoding in audio response");
-      throw new Error('Invalid audio content format received');
-    }
+    // if (!isValidBase64(audioContent)) {
+    //   console.error("Invalid base64 encoding in audio response");
+    //   throw new Error('Invalid audio content format received');
+    // }
     
-    // Convert base64 to blob and create URL with proper error handling
-    console.log("Converting base64 to blob...");
-    const blob = base64ToBlob(audioContent, 'audio/mp3');
-    if (!blob) {
-      console.error("Failed to convert base64 to blob");
-      throw new Error('Failed to convert audio content to blob');
-    }
+    // // Convert base64 to blob and create URL with proper error handling
+    // console.log("Converting base64 to blob...");
+    // const blob = base64ToBlob(audioContent, 'audio/mp3');
+    // if (!blob) {
+    //   console.error("Failed to convert base64 to blob");
+    //   throw new Error('Failed to convert audio content to blob');
+    // }
     
-    console.log(`Blob created successfully, size: ${blob.size} bytes`);
-    const url = createAudioUrl(blob);
-    if (!url) {
-      console.error("Failed to create audio URL from blob");
-      throw new Error('Failed to create audio URL');
-    }
+    // console.log(`Blob created successfully, size: ${blob.size} bytes`);
+    // const url = createAudioUrl(blob);
+    // if (!url) {
+    //   console.error("Failed to create audio URL from blob");
+    //   throw new Error('Failed to create audio URL');
+    // }
     
-    console.log("Created audio URL:", url);
+    // console.log("Created audio URL:", url);
     
     return {
-      audioUrl: url,
+      audioUrl: audioUrl,
       error: null
     };
   } catch (error) {
