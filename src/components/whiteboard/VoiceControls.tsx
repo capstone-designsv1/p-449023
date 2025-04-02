@@ -1,7 +1,8 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Volume2, VolumeX, Headphones } from "lucide-react";
+import { Mic, MicOff, Headphones, VolumeX } from "lucide-react";
+import { ElevenLabsVoice } from "@/hooks/useTextToSpeech";
 
 interface VoiceControlsProps {
   isListening: boolean;
@@ -10,6 +11,8 @@ interface VoiceControlsProps {
   toggleListening: () => void;
   toggleSpeaking: () => void;
   hasChatHistory: boolean;
+  currentVoice?: ElevenLabsVoice;
+  onChangeVoice?: (voice: ElevenLabsVoice) => void;
 }
 
 const VoiceControls: React.FC<VoiceControlsProps> = ({

@@ -1,78 +1,76 @@
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
+import { useAudioPlayer } from "@/hooks/useAudioPlayer";
+import { convertTextToSpeech, ElevenLabsVoice } from "@/services/textToSpeechService";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
 interface UseTextToSpeechProps {
   onSpeechStart: () => void;
   onSpeechEnd: () => void;
 }
 
+// Use 'export type' for re-exporting types when isolatedModules is enabled
+export type { ElevenLabsVoice } from "@/services/textToSpeechService";
+
 export const useTextToSpeech = ({
   onSpeechStart,
   onSpeechEnd
 }: UseTextToSpeechProps) => {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
+  const customVoiceId = 'F9Nt4wN7louPPlCeLCMN'; // Using the custom voice ID
+  
+  // Use the audio player hook for playback management
+  const {
+    isPlaying: isSpeaking,
+    playAudio,
+    stopAudio: stopSpeaking,
+  } = useAudioPlayer({
+    onPlaybackStart: onSpeechStart,
+    onPlaybackEnd: onSpeechEnd
+  });
 
-  // Initialize audio player
-  if (typeof window !== 'undefined' && !audioPlayerRef.current) {
-    audioPlayerRef.current = new Audio();
-    audioPlayerRef.current.addEventListener('ended', () => {
-      setIsSpeaking(false);
-      onSpeechEnd();
-    });
-  }
+  // Change voice
+  const changeVoice = useCallback((voice: ElevenLabsVoice) => {
+    setCurrentVoice(voice);
+  }, []);
 
-  const speakText = useCallback(async (text: string, voice = 'alloy') => {
-    if (!text || isSpeaking) return;
+  // Text to speech conversion and playback
+  const speakText = useCallback(async (text: string) => {
+    if (!text || isSpeaking) {
+      console.log(`Cannot speak text: ${!text ? 'Empty text' : 'Already speaking'}`);
+      return;
+    }
     
     try {
+      console.log(`Speaking text (length ${text.length}): "${text.substring(0, 50)}..."`);
       onSpeechStart();
-      setIsSpeaking(true);
       
-      const response = await supabase.functions.invoke('text-to-speech', {
-        body: { text, voice }
-      });
+      // Convert text to speech and get audio URL
+      console.log(`Using voice: ${currentVoice}, voice ID: ${customVoiceId}`);
+      const { audioUrl, error } = await convertTextToSpeech(text, customVoiceId);
       
-      if (response.error) {
-        throw new Error(response.error.message);
+      if (error || !audioUrl) {
+        const errorMessage = error?.message || "Failed to convert text to speech";
+        console.error(`TTS error: ${errorMessage}`);
+        throw new Error(errorMessage);
       }
       
-      if (!response.data || !response.data.audioContent) {
-        throw new Error('No audio content received');
-      }
+      console.log(`TTS successful, playing audio URL: ${audioUrl}`);
       
-      // Convert base64 to audio
-      const blob = await (await fetch(
-        `data:audio/mp3;base64,${response.data.audioContent}`
-      )).blob();
-      
-      const url = URL.createObjectURL(blob);
-      
-      if (audioPlayerRef.current) {
-        audioPlayerRef.current.src = url;
-        await audioPlayerRef.current.play();
-      }
+      // Play the audio
+      await playAudio(audioUrl);
+      console.log("Audio playback initiated");
     } catch (error) {
       console.error('Error speaking text:', error);
       toast.error('Failed to convert text to speech. Please try again.');
-      setIsSpeaking(false);
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd]);
-
-  const stopSpeaking = useCallback(() => {
-    if (audioPlayerRef.current && !audioPlayerRef.current.paused) {
-      audioPlayerRef.current.pause();
-      audioPlayerRef.current.currentTime = 0;
-      setIsSpeaking(false);
-      onSpeechEnd();
-    }
-  }, [onSpeechEnd]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, playAudio, currentVoice, customVoiceId]);
 
   return {
     isSpeaking,
+    currentVoice,
+    changeVoice,
     speakText,
     stopSpeaking
   };
