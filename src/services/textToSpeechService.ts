@@ -97,8 +97,8 @@ export const convertTextToSpeech = async (
       error: null
     };
   } catch (error) {
-    console.error('Error converting text to speech:', error);
-    toast.error('Failed to convert text to speech');
+    console.error('Error converting text to speech:audiourl check', error);
+    toast.error('Failed to convert text to speech audiourl check');
     return {
       audioUrl: null,
       error: error instanceof Error ? error : new Error(String(error))
