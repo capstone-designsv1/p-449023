@@ -1,5 +1,6 @@
 
 import { env } from "@/config/env";
+import { toast } from "sonner";
 
 export type ElevenLabsVoice = 
   | 'alloy'   // Default
@@ -10,17 +11,29 @@ export type ElevenLabsVoice =
   | 'shimmer'  // Elli (female)
   | 'custom';  // Custom voice ID
 
+// ElevenLabs standard voice IDs for reference
+export const ELEVEN_LABS_VOICES = {
+  alloy: "pNInz6obpgDQGcFmaJgB",   // Default
+  echo: "IKne3meq5aSn9XLyUdCD",    // Charlie (male) 
+  fable: "XB0fDUnXU5powFXDhCwa",   // Domi (female)
+  onyx: "oWAxZDx7w5VEj9dCyTzz",    // Adam (male)
+  nova: "EXAVITQu4vr4xnSDxMaL",    // Sarah (female)
+  shimmer: "flq6f7yk4E4fJM5XTYuZ", // Elli (female)
+  custom: "F9Nt4wN7louPPlCeLCMN"   // Custom voice ID
+};
+
 /**
  * Directly calls the ElevenLabs API to convert text to speech
  */
 export const textToSpeech = async (
   text: string, 
-  voiceId: string = 'F9Nt4wN7louPPlCeLCMN' // Default custom voice ID
+  voiceId: string = ELEVEN_LABS_VOICES.custom // Default custom voice ID
 ): Promise<Blob | null> => {
   try {
     // Validate API key
     if (!env.ELEVEN_LABS_API_KEY) {
       console.error('Missing ElevenLabs API key');
+      toast.error('ElevenLabs API key is missing. Please add it to your .env.local file.');
       throw new Error('ElevenLabs API key is required. Please add it to your environment variables.');
     }
 
@@ -55,12 +68,23 @@ export const textToSpeech = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`ElevenLabs API error (${response.status}):`, errorText);
-      throw new Error(`ElevenLabs API error: ${response.status}`);
+      
+      if (response.status === 401) {
+        toast.error('Invalid ElevenLabs API key. Please check your API key and try again.');
+        throw new Error('ElevenLabs authentication failed. Check your API key.');
+      } else if (response.status === 422) {
+        toast.error('Voice ID is invalid. Please check your voice settings.');
+        throw new Error('Invalid voice ID or parameters.');
+      } else {
+        toast.error(`ElevenLabs API error: ${response.status}`);
+        throw new Error(`ElevenLabs API error: ${response.status}`);
+      }
     }
 
     // Get the audio blob
     const audioBlob = await response.blob();
     if (!audioBlob || audioBlob.size === 0) {
+      toast.error('Received empty audio response from ElevenLabs');
       throw new Error('Received empty audio response from ElevenLabs');
     }
 
@@ -69,6 +93,7 @@ export const textToSpeech = async (
     
   } catch (error) {
     console.error('Error in textToSpeech:', error);
+    // Error toast is shown in the function that calls this one
     return null;
   }
 };
@@ -78,7 +103,7 @@ export const textToSpeech = async (
  */
 export const playVoiceResponse = async (
   text: string,
-  voiceId: string = 'F9Nt4wN7louPPlCeLCMN', 
+  voiceId: string = ELEVEN_LABS_VOICES.custom, 
   onStart?: () => void,
   onEnd?: () => void
 ): Promise<boolean> => {
@@ -89,6 +114,7 @@ export const playVoiceResponse = async (
     // Get audio blob from ElevenLabs
     const audioBlob = await textToSpeech(text, voiceId);
     if (!audioBlob) {
+      toast.error('Failed to get audio from ElevenLabs. Check your API key in .env.local file.');
       throw new Error('Failed to get audio from ElevenLabs');
     }
     
@@ -110,6 +136,7 @@ export const playVoiceResponse = async (
       
       audio.onerror = (e) => {
         console.error('Audio playback error:', e);
+        toast.error('Audio playback failed. Please try again.');
         URL.revokeObjectURL(audioUrl);
         if (onEnd) onEnd();
         resolve(false);
@@ -118,6 +145,21 @@ export const playVoiceResponse = async (
       // Play the audio
       audio.play().catch(err => {
         console.error('Failed to play audio:', err);
+        if (err.name === 'NotAllowedError') {
+          toast.error('Browser blocked audio playback. Please interact with the page first.');
+          
+          // Add a one-time click handler to try playing again
+          const clickHandler = () => {
+            audio.play().catch(e => {
+              console.error('Retry play failed:', e);
+              toast.error('Audio playback still failed. Please try again later.');
+            });
+            document.removeEventListener('click', clickHandler);
+          };
+          document.addEventListener('click', clickHandler, { once: true });
+        } else {
+          toast.error('Failed to play audio. Please try again.');
+        }
         URL.revokeObjectURL(audioUrl);
         if (onEnd) onEnd();
         resolve(false);
@@ -128,4 +170,14 @@ export const playVoiceResponse = async (
     if (onEnd) onEnd();
     return false;
   }
+};
+
+/**
+ * Helper function to get voice ID from voice name
+ */
+export const getVoiceId = (voice: ElevenLabsVoice): string => {
+  if (voice === 'custom') {
+    return ELEVEN_LABS_VOICES.custom;
+  }
+  return ELEVEN_LABS_VOICES[voice] || ELEVEN_LABS_VOICES.custom;
 };

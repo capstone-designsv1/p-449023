@@ -1,7 +1,11 @@
 
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { playVoiceResponse, ElevenLabsVoice } from "@/services/elevenLabsService";
+import { 
+  playVoiceResponse, 
+  ElevenLabsVoice, 
+  getVoiceId 
+} from "@/services/elevenLabsService";
 
 interface UseTextToSpeechProps {
   onSpeechStart: () => void;
@@ -16,7 +20,6 @@ export const useTextToSpeech = ({
 }: UseTextToSpeechProps) => {
   const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const customVoiceId = 'F9Nt4wN7louPPlCeLCMN'; // Using the custom voice ID
   
   // Change voice
   const changeVoice = useCallback((voice: ElevenLabsVoice) => {
@@ -44,10 +47,13 @@ export const useTextToSpeech = ({
       setIsSpeaking(true);
       onSpeechStart();
       
-      // Use our new playVoiceResponse function
+      // Get the voice ID based on the current voice
+      const voiceId = getVoiceId(currentVoice);
+      
+      // Use our playVoiceResponse function
       const success = await playVoiceResponse(
         text, 
-        customVoiceId,
+        voiceId,
         undefined, // We've already called onSpeechStart
         () => {
           setIsSpeaking(false);
@@ -65,7 +71,7 @@ export const useTextToSpeech = ({
       setIsSpeaking(false);
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd, customVoiceId]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, currentVoice]);
 
   return {
     isSpeaking,

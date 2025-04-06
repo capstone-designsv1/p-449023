@@ -17,6 +17,15 @@ To enable the text-to-speech feature, you need to add your ElevenLabs API key to
 
 You can get an ElevenLabs API key by signing up at [ElevenLabs](https://elevenlabs.io).
 
+## Troubleshooting Voice Features
+
+If you encounter issues with the voice features:
+
+1. Make sure your ElevenLabs API key is correct and has sufficient credits
+2. Check that your browser allows autoplay of audio (click anywhere on the page if prompted)
+3. Try using a different voice if a specific voice isn't working
+4. Check the browser console for detailed error messages
+
 ## Features
 
 - AI-powered interview practice
