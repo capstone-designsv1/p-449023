@@ -7,7 +7,8 @@ export type ElevenLabsVoice =
   | 'fable'   // Domi (female)
   | 'onyx'    // Adam (male)
   | 'nova'    // Sarah (female)
-  | 'shimmer'  // Elli (female);
+  | 'shimmer'  // Elli (female)
+  | 'custom';  // Custom voice ID
 
 /**
  * Directly calls the ElevenLabs API to convert text to speech
