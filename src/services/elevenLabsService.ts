@@ -23,6 +23,13 @@ export const ELEVEN_LABS_VOICES = {
 };
 
 /**
+ * Checks if ElevenLabs API key is configured
+ */
+export const isElevenLabsConfigured = (): boolean => {
+  return !!env.ELEVEN_LABS_API_KEY && env.ELEVEN_LABS_API_KEY.length > 0;
+};
+
+/**
  * Directly calls the ElevenLabs API to convert text to speech
  */
 export const textToSpeech = async (
@@ -31,9 +38,16 @@ export const textToSpeech = async (
 ): Promise<Blob | null> => {
   try {
     // Validate API key
-    if (!env.ELEVEN_LABS_API_KEY) {
+    if (!isElevenLabsConfigured()) {
       console.error('Missing ElevenLabs API key');
       toast.error('ElevenLabs API key is missing. Please add it to your .env.local file.');
+      
+      // Show more detailed instructions
+      toast.error(
+        'Add VITE_ELEVEN_LABS_API_KEY=your_api_key_here to .env.local file in project root',
+        { duration: 5000 }
+      );
+      
       throw new Error('ElevenLabs API key is required. Please add it to your environment variables.');
     }
 
@@ -71,6 +85,7 @@ export const textToSpeech = async (
       
       if (response.status === 401) {
         toast.error('Invalid ElevenLabs API key. Please check your API key and try again.');
+        toast.error('Make sure you have added your API key to the .env.local file');
         throw new Error('ElevenLabs authentication failed. Check your API key.');
       } else if (response.status === 422) {
         toast.error('Voice ID is invalid. Please check your voice settings.');
@@ -108,6 +123,14 @@ export const playVoiceResponse = async (
   onEnd?: () => void
 ): Promise<boolean> => {
   try {
+    // Check if API key is configured before attempting
+    if (!isElevenLabsConfigured()) {
+      toast.error('ElevenLabs API key is missing. Voice features are disabled.');
+      toast.error('Add VITE_ELEVEN_LABS_API_KEY=your_api_key_here to .env.local file in project root', 
+        { duration: 5000 });
+      return false;
+    }
+    
     // Call onStart callback if provided
     if (onStart) onStart();
     

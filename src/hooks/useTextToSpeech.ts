@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { 
   playVoiceResponse, 
   ElevenLabsVoice, 
-  getVoiceId 
+  getVoiceId,
+  isElevenLabsConfigured
 } from "@/services/elevenLabsService";
 
 interface UseTextToSpeechProps {
@@ -37,9 +38,16 @@ export const useTextToSpeech = ({
 
   // Text to speech conversion and playback
   const speakText = useCallback(async (text: string) => {
+    // Check if API is configured
+    if (!isElevenLabsConfigured()) {
+      toast.error('ElevenLabs API key is not configured. Voice features are disabled.');
+      toast.error('Follow the README instructions to add your API key to .env.local', { duration: 5000 });
+      return false;
+    }
+    
     if (!text || isSpeaking) {
       console.log(`Cannot speak text: ${!text ? 'Empty text' : 'Already speaking'}`);
-      return;
+      return false;
     }
     
     try {
@@ -65,11 +73,14 @@ export const useTextToSpeech = ({
         throw new Error("Failed to play voice response");
       }
       
+      return true;
+      
     } catch (error) {
       console.error('Error speaking text:', error);
       toast.error('Failed to convert text to speech. Please try again.');
       setIsSpeaking(false);
       onSpeechEnd();
+      return false;
     }
   }, [isSpeaking, onSpeechStart, onSpeechEnd, currentVoice]);
 
