@@ -1,38 +1,36 @@
 
 import { useState, useCallback } from "react";
-import { useAudioPlayer } from "@/hooks/useAudioPlayer";
-import { convertTextToSpeech, ElevenLabsVoice } from "@/services/textToSpeechService";
 import { toast } from "sonner";
+import { playVoiceResponse, ElevenLabsVoice } from "@/services/elevenLabsService";
 
 interface UseTextToSpeechProps {
   onSpeechStart: () => void;
   onSpeechEnd: () => void;
 }
 
-// Use 'export type' for re-exporting types when isolatedModules is enabled
-export type { ElevenLabsVoice } from "@/services/textToSpeechService";
+export type { ElevenLabsVoice } from "@/services/elevenLabsService";
 
 export const useTextToSpeech = ({
   onSpeechStart,
   onSpeechEnd
 }: UseTextToSpeechProps) => {
   const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const customVoiceId = 'F9Nt4wN7louPPlCeLCMN'; // Using the custom voice ID
   
-  // Use the audio player hook for playback management
-  const {
-    isPlaying: isSpeaking,
-    playAudio,
-    stopAudio: stopSpeaking,
-  } = useAudioPlayer({
-    onPlaybackStart: onSpeechStart,
-    onPlaybackEnd: onSpeechEnd
-  });
-
   // Change voice
   const changeVoice = useCallback((voice: ElevenLabsVoice) => {
     setCurrentVoice(voice);
   }, []);
+
+  // Stop speaking
+  const stopSpeaking = useCallback(() => {
+    // Since we're using the Audio API directly, we can't stop it easily
+    // This is a limitation of the current implementation
+    // For now, we'll just update the state
+    setIsSpeaking(false);
+    onSpeechEnd();
+  }, [onSpeechEnd]);
 
   // Text to speech conversion and playback
   const speakText = useCallback(async (text: string) => {
@@ -43,29 +41,31 @@ export const useTextToSpeech = ({
     
     try {
       console.log(`Speaking text (length ${text.length}): "${text.substring(0, 50)}..."`);
+      setIsSpeaking(true);
       onSpeechStart();
       
-      // Convert text to speech and get audio URL
-      console.log(`Using voice: ${currentVoice}, voice ID: ${customVoiceId}`);
-      const { audioUrl, error } = await convertTextToSpeech(text, customVoiceId);
+      // Use our new playVoiceResponse function
+      const success = await playVoiceResponse(
+        text, 
+        customVoiceId,
+        undefined, // We've already called onSpeechStart
+        () => {
+          setIsSpeaking(false);
+          onSpeechEnd();
+        }
+      );
       
-      if (error || !audioUrl) {
-        const errorMessage = error?.message || "Failed to convert text to speech";
-        console.error(`TTS error: ${errorMessage}`);
-        throw new Error(errorMessage);
+      if (!success) {
+        throw new Error("Failed to play voice response");
       }
       
-      console.log(`TTS successful, playing audio URL: ${audioUrl}`);
-      
-      // Play the audio
-      await playAudio(audioUrl);
-      console.log("Audio playback initiated");
     } catch (error) {
       console.error('Error speaking text:', error);
       toast.error('Failed to convert text to speech. Please try again.');
+      setIsSpeaking(false);
       onSpeechEnd();
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd, playAudio, currentVoice, customVoiceId]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, customVoiceId]);
 
   return {
     isSpeaking,
