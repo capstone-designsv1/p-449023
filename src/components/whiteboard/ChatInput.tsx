@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Mic } from "lucide-react";
+import { Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -63,20 +63,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }}
       />
       <div className="flex flex-col gap-2 self-end">
-        {toggleVoiceMode && (
-          <Button
-            onClick={toggleVoiceMode}
-            size="icon"
-            variant="outline"
-            className={cn(
-              "transition-colors",
-              isVoiceMode && "bg-green-100 text-green-700 border-green-300"
-            )}
-            title={isVoiceMode ? "Disable voice mode" : "Enable voice mode"}
-          >
-            <Mic className="h-4 w-4" />
-          </Button>
-        )}
         <Button
           onClick={handleSend}
           size="icon"

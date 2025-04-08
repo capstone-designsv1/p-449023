@@ -5,6 +5,7 @@ import Toolbar from "@/components/whiteboard/Toolbar";
 import StickyNote from "@/components/whiteboard/StickyNote";
 import Shape from "@/components/whiteboard/Shape";
 import Arrow from "@/components/whiteboard/Arrow";
+import FloatingMicButton from "@/components/whiteboard/FloatingMicButton";
 
 interface StickyNoteType {
   id: string;
@@ -45,6 +46,8 @@ interface WhiteboardAreaProps {
   updateArrow?: (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
   addArrow?: (startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
   deleteArrow?: (id: string) => void;
+  isVoiceMode?: boolean;
+  toggleVoiceMode?: () => void;
 }
 
 const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
@@ -62,6 +65,8 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   updateArrow = () => {},
   addArrow = () => {},
   deleteArrow = () => {},
+  isVoiceMode,
+  toggleVoiceMode,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawingArrow, setIsDrawingArrow] = useState(false);
@@ -108,6 +113,9 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
     >
       <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
       <WhiteboardCanvas activeTool={activeTool} onCanvasRef={onCanvasRef} />
+      
+      {/* Floating mic button */}
+      <FloatingMicButton isVoiceMode={isVoiceMode} toggleVoiceMode={toggleVoiceMode} />
       
       {/* Render arrows */}
       {arrows.map((arrow) => (

@@ -7,11 +7,12 @@ import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useVoiceControl } from "@/hooks/useVoiceControl";
 
 const WhiteboardContent: React.FC = () => {
   const { 
     activeChallenge, notes, showResults, 
-    evaluationScore, evaluationFeedback, isEvaluating 
+    evaluationScore, evaluationFeedback, isEvaluating, chatHistory 
   } = useChallengeContext();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -24,6 +25,11 @@ const WhiteboardContent: React.FC = () => {
     shapes, updateShapePosition, deleteShape,
     arrows, updateArrow, addArrow, deleteArrow
   } = useWhiteboard();
+
+  // Voice control for the entire whiteboard
+  const { isVoiceMode, toggleVoiceMode, sendMessage } = useVoiceControl({
+    chatHistory
+  });
 
   useEffect(() => {
     if (activeChallenge) {
@@ -66,6 +72,8 @@ const WhiteboardContent: React.FC = () => {
             setNotes={useChallengeContext().setNotes}
             onSubmitForEvaluation={handleSubmitForEvaluation}
             isEvaluating={isEvaluating}
+            isVoiceMode={isVoiceMode}
+            toggleVoiceMode={toggleVoiceMode}
           />
         )}
 
@@ -85,6 +93,8 @@ const WhiteboardContent: React.FC = () => {
           updateArrow={updateArrow}
           addArrow={addArrow}
           deleteArrow={deleteArrow}
+          isVoiceMode={isVoiceMode}
+          toggleVoiceMode={toggleVoiceMode}
         />
       </div>
 

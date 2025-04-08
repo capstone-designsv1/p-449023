@@ -18,28 +18,36 @@ interface ChatMessage {
 interface ChatInterfaceProps {
   onSubmitForEvaluation: (data: { chatHistory?: ChatMessage[] }) => void;
   isEvaluating: boolean;
+  isVoiceMode?: boolean;
+  toggleVoiceMode?: () => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
   onSubmitForEvaluation,
-  isEvaluating
+  isEvaluating,
+  isVoiceMode,
+  toggleVoiceMode
 }) => {
   const { chatHistory, setChatHistory, activeChallenge } = useChallengeContext();
   const { isSending, sendMessage } = useChatLogic(activeChallenge, chatHistory, setChatHistory);
   
   const {
-    isVoiceMode,
+    isVoiceMode: voiceControlMode,
     isListening,
     isSpeaking,
     inputText,
     setInputText,
-    toggleVoiceMode,
+    toggleVoiceMode: toggleVoiceControlMode,
     toggleListening,
     toggleSpeaking
   } = useVoiceControl({
     chatHistory,
     sendMessage
   });
+
+  // Use external voice mode state if provided, otherwise use internal state
+  const effectiveVoiceMode = isVoiceMode !== undefined ? isVoiceMode : voiceControlMode;
+  const effectiveToggleVoiceMode = toggleVoiceMode || toggleVoiceControlMode;
 
   return (
     <div className="flex-1 flex flex-col mb-4">
@@ -51,7 +59,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       <ChatMessageList messages={chatHistory} />
       
       {/* Voice Controls (when voice mode is enabled) */}
-      {isVoiceMode && (
+      {effectiveVoiceMode && (
         <VoiceControls
           isListening={isListening}
           isSpeaking={isSpeaking}
@@ -68,8 +76,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         isSending={isSending}
         inputText={inputText}
         setInputText={setInputText}
-        isVoiceMode={isVoiceMode}
-        toggleVoiceMode={toggleVoiceMode}
       />
       
       {/* Submit for Evaluation Button */}
