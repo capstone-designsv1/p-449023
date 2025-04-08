@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "../useSpeechToText";
 import { useTextToSpeech } from "../useTextToSpeech";
@@ -21,6 +21,9 @@ export const useVoiceAssistant = ({
 }: UseVoiceAssistantProps) => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [inputText, setInputText] = useState('');
+  
+  // Create ref for auto-speak functionality
+  const autoSpeakEnabledRef = useRef(true);
   
   // Handlers for speech-to-text and text-to-speech events
   const handleTranscriptReady = (text: string) => {
