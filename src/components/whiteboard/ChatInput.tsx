@@ -11,7 +11,6 @@ interface ChatInputProps {
   inputText?: string;
   setInputText?: (text: string) => void;
   isVoiceMode?: boolean;
-  toggleVoiceMode?: () => void;
   isListening?: boolean;
   toggleListening?: () => void;
 }
@@ -22,7 +21,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
   inputText,
   setInputText,
   isVoiceMode,
-  toggleVoiceMode,
   isListening,
   toggleListening
 }) => {
@@ -84,21 +82,6 @@ const ChatInput: React.FC<ChatInputProps> = ({
             ) : (
               <Mic className="h-4 w-4" />
             )}
-          </Button>
-        )}
-        
-        {toggleVoiceMode && (
-          <Button
-            onClick={toggleVoiceMode}
-            size="icon"
-            variant="outline"
-            className={cn(
-              "transition-colors",
-              isVoiceMode && "bg-green-100 text-green-700 border-green-300"
-            )}
-            title={isVoiceMode ? "Disable voice mode" : "Enable voice mode"}
-          >
-            <Mic className="h-4 w-4" />
           </Button>
         )}
         

@@ -1,5 +1,6 @@
 
 import React from "react";
+import { Headphones, VolumeX } from "lucide-react";
 
 interface ChatMessage {
   id: string;
@@ -56,8 +57,17 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
                   className={`text-xs flex items-center gap-1 ${
                     isSpeaking ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
                   }`}
+                  title="Play the AI's voice aloud"
                 >
-                  {isSpeaking ? "Stop" : "Play Response"}
+                  {isSpeaking ? (
+                    <>
+                      <VolumeX className="h-4 w-4" /> Stop
+                    </>
+                  ) : (
+                    <>
+                      <Headphones className="h-4 w-4" /> Play
+                    </>
+                  )}
                 </button>
               )}
             </div>
