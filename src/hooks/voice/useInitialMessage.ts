@@ -1,11 +1,12 @@
 
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 interface UseInitialMessageProps {
   initialMessage?: string;
   isVoiceMode: boolean;
   speakText: (text: string) => Promise<boolean>;
+  initialMessageProcessedRef: React.MutableRefObject<boolean>;
 }
 
 /**
@@ -14,39 +15,31 @@ interface UseInitialMessageProps {
 export const useInitialMessage = ({
   initialMessage,
   isVoiceMode,
-  speakText
+  speakText,
+  initialMessageProcessedRef
 }: UseInitialMessageProps) => {
-  const initialMessageSpokenRef = useRef(false);
-  
   // Speak initial message if provided
   useEffect(() => {
-    if (initialMessage && !initialMessageSpokenRef.current && isVoiceMode) {
-      console.log("Voice mode: Speaking initial message via useInitialMessage hook");
-      initialMessageSpokenRef.current = true;
+    if (isVoiceMode && initialMessage && !initialMessageProcessedRef.current) {
+      console.log("Voice assistant: Processing initial message for the first time");
+      initialMessageProcessedRef.current = true;
       
       // Mark that user has interacted with the page
       document.documentElement.setAttribute('data-user-interacted', 'true');
       
       setTimeout(() => {
+        console.log("Voice assistant: Speaking initial message");
         speakText(initialMessage).catch(err => {
           console.error("Error speaking initial message:", err);
           toast.error("Failed to read challenge description. Please try again.");
         });
       }, 1000);
     }
-  }, [initialMessage, isVoiceMode, speakText]);
-  
-  // Reset the spoken flag when voice mode changes
-  useEffect(() => {
-    if (!isVoiceMode) {
-      initialMessageSpokenRef.current = false;
-    }
-  }, [isVoiceMode]);
+  }, [isVoiceMode, initialMessage, speakText, initialMessageProcessedRef]);
   
   return {
-    initialMessageSpokenRef,
     resetInitialMessageSpoken: () => {
-      initialMessageSpokenRef.current = false;
+      initialMessageProcessedRef.current = false;
     }
   };
 };
