@@ -1,11 +1,12 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { toast } from "sonner";
 import { useAutoSpeakConfig } from "./voice/useAutoSpeakConfig";
 import { useMessageTracking } from "./voice/useMessageTracking";
 import { useInitialMessage } from "./voice/useInitialMessage";
 import { useSpeechToText } from "./useSpeechToText";
 import { useTextToSpeech } from "./useTextToSpeech";
+import { useVoiceInitialization } from "./voice/useVoiceInitialization";
+import { useVoiceInteractions } from "./voice/useVoiceInteractions";
 import { ChatMessage } from "@/services/interviewChatService";
 
 interface UseVoiceControlProps {
@@ -21,40 +22,33 @@ export const useVoiceControl = ({
 }: UseVoiceControlProps) => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [inputText, setInputText] = useState('');
-  const firstInitializationRef = useRef(true);
   
   // Use our auto-speak configuration hook
   const { autoSpeakEnabledRef, isAutoSpeakEnabled, toggleAutoSpeak } = useAutoSpeakConfig();
   
+  // Create a ref for speech end handler to avoid stale closures
+  const latestIsVoiceModeRef = useRef(isVoiceMode);
+  const latestIsListeningRef = useRef(false);
+  
+  // Update refs when values change
+  useEffect(() => {
+    latestIsVoiceModeRef.current = isVoiceMode;
+  }, [isVoiceMode]);
+  
   // Handlers for speech-to-text and text-to-speech events
-  const handleTranscriptReady = (text: string) => {
-    console.log("Voice mode: Transcript ready", text);
+  const handleTranscriptReady = useCallback((text: string) => {
+    console.log("Voice control: Transcript ready", text);
     setInputText(text);
     if (text.trim() && onMessageReady) {
       onMessageReady(text);
     }
-  };
+  }, [onMessageReady]);
   
-  const handleSpeechStart = () => {
-    console.log("Voice mode: AI speaking started");
-  };
+  const handleSpeechStart = useCallback(() => {
+    console.log("Voice control: AI speaking started");
+  }, []);
   
-  const handleSpeechEnd = () => {
-    console.log("Voice mode: AI speaking ended");
-    
-    // Auto-start listening again after AI finishes speaking
-    if (isVoiceMode && autoSpeakEnabledRef.current) {
-      console.log("Voice mode: Auto-starting listening after AI finished speaking");
-      setTimeout(() => {
-        if (!isListening) {
-          console.log("Voice mode: Starting listening after speech");
-          startListening();
-        }
-      }, 800);
-    }
-  };
-  
-  // Initialize voice assistant with handlers
+  // Initialize speech-to-text with handlers
   const { 
     isListening, 
     startListening, 
@@ -64,7 +58,29 @@ export const useVoiceControl = ({
     maxRecordingTime: 30000, // 30 seconds max
     silenceDetectionTime: 10000 // 10 seconds of silence
   });
+  
+  // Update listening ref when value changes
+  useEffect(() => {
+    latestIsListeningRef.current = isListening;
+  }, [isListening]);
+  
+  // Define speech end handler with proper access to latest state
+  const handleSpeechEnd = useCallback(() => {
+    console.log("Voice control: AI speaking ended");
+    
+    // Auto-start listening again after AI finishes speaking
+    if (latestIsVoiceModeRef.current && autoSpeakEnabledRef.current) {
+      console.log("Voice control: Auto-starting listening after AI finished speaking");
+      setTimeout(() => {
+        if (!latestIsListeningRef.current) {
+          console.log("Voice control: Starting listening after speech");
+          startListening();
+        }
+      }, 800);
+    }
+  }, [startListening, autoSpeakEnabledRef]);
 
+  // Initialize text-to-speech with handlers
   const {
     isSpeaking,
     currentVoice,
@@ -76,7 +92,7 @@ export const useVoiceControl = ({
     onSpeechEnd: handleSpeechEnd
   });
 
-  // Use our initial message hook to handle speaking the first message, with reset capability
+  // Use our initial message hook to handle speaking the first message
   const { initialMessageSpokenRef, resetInitialMessageSpoken } = useInitialMessage({
     initialMessage,
     isVoiceMode,
@@ -84,7 +100,6 @@ export const useVoiceControl = ({
   });
   
   // Use our message tracking hook to auto-speak assistant messages
-  // Only track and speak new messages, not initial ones
   useMessageTracking({
     chatHistory,
     isVoiceMode,
@@ -95,80 +110,45 @@ export const useVoiceControl = ({
     isSpeaking
   });
 
-  // Toggle voice mode on/off
+  // Use our voice initialization hook
+  const { toggleVoiceMode: handleVoiceToggle } = useVoiceInitialization({
+    initialMessage,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    autoSpeakEnabledRef,
+    resetInitialMessageSpoken
+  });
+
+  // Use our voice interactions hook
+  const { toggleListening: handleToggleListening, toggleSpeaking: handleToggleSpeaking } = useVoiceInteractions({
+    isListening,
+    isSpeaking,
+    startListening,
+    stopListening,
+    stopSpeaking,
+    speakText,
+    chatHistory
+  });
+
+  // Wrapper for toggleVoiceMode that updates state
   const toggleVoiceMode = useCallback(() => {
-    if (!isVoiceMode) {
-      // Ask for microphone permission before enabling
-      console.log("Voice mode: Requesting microphone permission");
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(() => {
-          console.log("Voice mode: Microphone permission granted");
-          setIsVoiceMode(true);
-          toast.success("Voice mode enabled");
-          
-          // Mark that user has interacted with the page
-          document.documentElement.setAttribute('data-user-interacted', 'true');
-          
-          // Only auto-start listening on first voice mode activation if there's no initial message
-          if (!initialMessage && firstInitializationRef.current && autoSpeakEnabledRef.current) {
-            firstInitializationRef.current = false;
-            setTimeout(() => {
-              console.log("Voice mode: Auto-starting listening (no initial message)");
-              startListening();
-            }, 800);
-          }
-        })
-        .catch((err) => {
-          console.error("Voice mode: Microphone permission denied:", err);
-          toast.error("Microphone access is required for voice mode");
-        });
+    const result = handleVoiceToggle(!isVoiceMode, isListening, isSpeaking);
+    if (result !== undefined) {
+      setIsVoiceMode(!!result);
     } else {
-      // Disable voice mode
-      if (isListening) {
-        console.log("Voice mode: Stopping listening before disabling voice mode");
-        stopListening();
-      }
-      if (isSpeaking) {
-        console.log("Voice mode: Stopping speaking before disabling voice mode");
-        stopSpeaking();
-      }
-      setIsVoiceMode(false);
-      resetInitialMessageSpoken();
-      firstInitializationRef.current = true;
-      toast.success("Voice mode disabled");
-      console.log("Voice mode: Voice mode disabled");
+      setIsVoiceMode(!isVoiceMode);
     }
-  }, [isVoiceMode, initialMessage, isListening, isSpeaking, stopListening, stopSpeaking, startListening, autoSpeakEnabledRef, resetInitialMessageSpoken]);
+  }, [isVoiceMode, isListening, isSpeaking, handleVoiceToggle]);
 
-  // Toggle listening state
+  // Update handler references when dependencies change
   const toggleListening = useCallback(() => {
-    if (isListening) {
-      console.log("Voice mode: Stopping listening");
-      stopListening();
-    } else {
-      console.log("Voice mode: Starting listening");
-      startListening();
-    }
-  }, [isListening, startListening, stopListening]);
+    handleToggleListening();
+  }, [handleToggleListening]);
 
-  // Toggle speaking state
   const toggleSpeaking = useCallback(() => {
-    if (isSpeaking) {
-      console.log("Voice mode: Stopping speaking");
-      stopSpeaking();
-    } else if (chatHistory.length > 0) {
-      // Find the last assistant message
-      const lastAssistantMessage = [...chatHistory].reverse().find(msg => msg.role === 'assistant');
-      if (lastAssistantMessage) {
-        console.log("Voice mode: Speaking last assistant message");
-        
-        // Mark that user has interacted with the page
-        document.documentElement.setAttribute('data-user-interacted', 'true');
-        
-        speakText(lastAssistantMessage.content);
-      }
-    }
-  }, [isSpeaking, stopSpeaking, speakText, chatHistory]);
+    handleToggleSpeaking();
+  }, [handleToggleSpeaking]);
 
   return {
     isVoiceMode,
