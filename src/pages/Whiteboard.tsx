@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -14,6 +13,7 @@ declare global {
   interface Window {
     isListening?: boolean;
     toggleListening?: () => void;
+    isSpeaking?: boolean;
   }
 }
 
@@ -51,13 +51,15 @@ const WhiteboardContent: React.FC = () => {
   useEffect(() => {
     window.isListening = isListening;
     window.toggleListening = toggleListening;
+    window.isSpeaking = isSpeaking;
     
     return () => {
       // Clean up global references when component unmounts
       delete window.isListening;
       delete window.toggleListening;
+      delete window.isSpeaking;
     };
-  }, [isListening, toggleListening]);
+  }, [isListening, toggleListening, isSpeaking]);
 
   useEffect(() => {
     if (activeChallenge) {

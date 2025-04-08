@@ -2,10 +2,11 @@
 import React, { useRef, useState } from "react";
 import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
 import Toolbar from "@/components/whiteboard/Toolbar";
-import StickyNote from "@/components/whiteboard/StickyNote";
-import Shape from "@/components/whiteboard/Shape";
-import Arrow from "@/components/whiteboard/Arrow";
 import FloatingMicButton from "@/components/whiteboard/FloatingMicButton";
+import TempArrow from "@/components/whiteboard/TempArrow";
+import ArrowList from "@/components/whiteboard/ArrowList";
+import ShapeList from "@/components/whiteboard/ShapeList";
+import StickyNoteList from "@/components/whiteboard/StickyNoteList";
 import { toast } from "sonner";
 
 interface StickyNoteType {
@@ -127,78 +128,39 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
       <FloatingMicButton 
         isVoiceMode={isVoiceMode} 
         toggleVoiceMode={toggleVoiceMode}
-        isListening={window.isListening} // Pass down isListening state
-        toggleListening={window.toggleListening} // Pass down toggleListening function
-        isSpeaking={false} // We'll update this in future iterations
+        isListening={window.isListening} 
+        toggleListening={window.toggleListening} 
+        isSpeaking={window.isSpeaking} 
       />
       
-      {/* Render arrows */}
-      {arrows.map((arrow) => (
-        <Arrow
-          key={arrow.id}
-          id={arrow.id}
-          startPoint={arrow.startPoint}
-          endPoint={arrow.endPoint}
-          color={arrow.color}
-          updateArrow={updateArrow}
-          deleteArrow={deleteArrow}
-        />
-      ))}
+      {/* Lists of elements */}
+      <ArrowList 
+        arrows={arrows} 
+        updateArrow={updateArrow} 
+        deleteArrow={deleteArrow} 
+      />
       
-      {/* Render temporary arrow while drawing */}
-      {isDrawingArrow && (
-        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          <line
-            x1={arrowStart.x}
-            y1={arrowStart.y}
-            x2={arrowEnd.x}
-            y2={arrowEnd.y}
-            stroke="black"
-            strokeWidth={2}
-            markerEnd="url(#arrowhead)"
-          />
-          <defs>
-            <marker
-              id="arrowhead"
-              markerWidth="10"
-              markerHeight="7"
-              refX="9"
-              refY="3.5"
-              orient="auto"
-            >
-              <polygon points="0 0, 10 3.5, 0 7" fill="black" />
-            </marker>
-          </defs>
-        </svg>
-      )}
+      {/* Temporary arrow being drawn */}
+      <TempArrow 
+        startPoint={arrowStart} 
+        endPoint={arrowEnd} 
+        isDrawing={isDrawingArrow} 
+      />
       
-      {/* Render shapes */}
-      {shapes.map((shape) => (
-        <Shape
-          key={shape.id}
-          id={shape.id}
-          type={shape.type}
-          position={shape.position}
-          color={shape.color}
-          size={shape.size}
-          updatePosition={updateShapePosition}
-          deleteShape={deleteShape}
-        />
-      ))}
+      {/* Shapes */}
+      <ShapeList 
+        shapes={shapes} 
+        updateShapePosition={updateShapePosition} 
+        deleteShape={deleteShape} 
+      />
       
-      {/* Render sticky notes */}
-      {notes.map((note) => (
-        <StickyNote
-          key={note.id}
-          id={note.id}
-          text={note.text}
-          position={note.position}
-          color={note.color}
-          updatePosition={updateNotePosition}
-          updateText={updateNoteText}
-          deleteNote={deleteNote}
-        />
-      ))}
+      {/* Sticky notes */}
+      <StickyNoteList 
+        notes={notes} 
+        updateNotePosition={updateNotePosition} 
+        updateNoteText={updateNoteText} 
+        deleteNote={deleteNote} 
+      />
     </div>
   );
 };

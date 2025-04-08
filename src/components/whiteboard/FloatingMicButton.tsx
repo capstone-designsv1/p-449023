@@ -42,7 +42,7 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
   // Determine the button color based on the state
   // White: Not in voice mode
   // Green: In voice mode and listening
-  // Pulsing Green: When speaking
+  // Pulsing Blue: When speaking
   return (
     <Button
       onClick={handleClick}
