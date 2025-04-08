@@ -20,16 +20,27 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
   if (!toggleVoiceMode) return null;
   
   const handleClick = () => {
-    // If not in voice mode, first enable voice mode
+    // If not in voice mode, enable voice mode AND start listening immediately
     if (!isVoiceMode) {
       toggleVoiceMode();
+      // We need to wait a small amount of time for voice mode to be enabled
+      // before we can start listening
+      setTimeout(() => {
+        if (toggleListening) {
+          toggleListening();
+        }
+      }, 300);
     } 
-    // If in voice mode and toggleListening is available, toggle listening
+    // If already in voice mode, just toggle listening state
     else if (toggleListening) {
       toggleListening();
     }
   };
   
+  // Determine the button color based on the state
+  // White: Not in voice mode
+  // Green: In voice mode but not listening
+  // Red: In voice mode and listening
   return (
     <Button
       onClick={handleClick}
@@ -39,9 +50,9 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
         "absolute bottom-6 right-6 z-10 rounded-full w-12 h-12 transition-colors shadow-md",
         isVoiceMode 
           ? isListening 
-            ? "bg-red-100 text-red-700 border-red-300" 
-            : "bg-green-100 text-green-700 border-green-300"
-          : "bg-white"
+            ? "bg-green-100 text-green-700 border-green-300" 
+            : "bg-white text-gray-700 border-gray-200"
+          : "bg-white text-gray-700 border-gray-200"
       )}
       title={isVoiceMode ? (isListening ? "Stop listening" : "Start listening") : "Enable voice mode"}
     >
