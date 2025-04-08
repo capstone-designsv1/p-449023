@@ -1,16 +1,11 @@
 
 // This file is kept for backward compatibility
 // It now redirects to the new elevenLabsService.ts
-
+import { textToSpeech, playVoiceResponse, ElevenLabsVoice } from "./elevenLabsService";
 import { toast } from "sonner";
 
-// Re-export the types and functions from the new service
-export { 
-  type ElevenLabsVoice 
-} from "./elevenLabsService";
-
-// Import functions from the refactored service
-import { textToSpeech } from "./voice/textToSpeech";
+// Re-export the types
+export type { ElevenLabsVoice } from "./elevenLabsService";
 
 interface TextToSpeechResponse {
   audioUrl: string | null;
@@ -30,7 +25,7 @@ export const convertTextToSpeech = async (
     console.log(`Using voice ID: ${customVoiceId || "default"}`);
     
     // Get audio blob from ElevenLabs
-    const audioBlob = await textToSpeech(text, customVoiceId || "");
+    const audioBlob = await textToSpeech(text, customVoiceId);
     
     if (!audioBlob) {
       throw new Error('Failed to convert text to speech');

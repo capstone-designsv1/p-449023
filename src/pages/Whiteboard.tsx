@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -6,60 +7,23 @@ import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useVoiceControl } from "@/hooks/useVoiceControl";
-
-// Declare global window interface to store voice control functions
-declare global {
-  interface Window {
-    isListening?: boolean;
-    toggleListening?: () => void;
-    isSpeaking?: boolean;
-  }
-}
 
 const WhiteboardContent: React.FC = () => {
   const { 
     activeChallenge, notes, showResults, 
-    evaluationScore, evaluationFeedback, isEvaluating, chatHistory 
+    evaluationScore, evaluationFeedback, isEvaluating 
   } = useChallengeContext();
   
   const [isLoading, setIsLoading] = useState(true);
   
   const {
     activeTool, setActiveTool,
-    updateNotePosition, updateNoteText, deleteNote, addNote,
+    updateNotePosition, updateNoteText, deleteNote,
     handleBackToList, handleSubmitForEvaluation,
     handleCanvasRef, handleCloseResults, initializeChallenge,
     shapes, updateShapePosition, deleteShape,
     arrows, updateArrow, addArrow, deleteArrow
   } = useWhiteboard();
-
-  // Voice control for the entire whiteboard
-  const { 
-    isVoiceMode, 
-    toggleVoiceMode,
-    isListening,
-    isSpeaking,
-    toggleListening 
-  } = useVoiceControl({
-    chatHistory,
-    // Pass the initial message (challenge description) to be spoken automatically
-    initialMessage: activeChallenge?.description
-  });
-
-  // Make voice control functions globally available for components
-  useEffect(() => {
-    window.isListening = isListening;
-    window.toggleListening = toggleListening;
-    window.isSpeaking = isSpeaking;
-    
-    return () => {
-      // Clean up global references when component unmounts
-      delete window.isListening;
-      delete window.toggleListening;
-      delete window.isSpeaking;
-    };
-  }, [isListening, toggleListening, isSpeaking]);
 
   useEffect(() => {
     if (activeChallenge) {
@@ -69,6 +33,7 @@ const WhiteboardContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
+      {/* Header */}
       {isLoading ? (
         <div className="bg-white border-b border-gray-200 p-4">
           <div className="container mx-auto">
@@ -101,12 +66,10 @@ const WhiteboardContent: React.FC = () => {
             setNotes={useChallengeContext().setNotes}
             onSubmitForEvaluation={handleSubmitForEvaluation}
             isEvaluating={isEvaluating}
-            isVoiceMode={isVoiceMode}
-            toggleVoiceMode={toggleVoiceMode}
           />
         )}
 
-        {/* Whiteboard area with updated props */}
+        {/* Whiteboard area */}
         <WhiteboardArea 
           activeTool={activeTool}
           setActiveTool={setActiveTool}
@@ -114,7 +77,6 @@ const WhiteboardContent: React.FC = () => {
           updateNotePosition={updateNotePosition}
           updateNoteText={updateNoteText}
           deleteNote={deleteNote}
-          addNote={addNote}
           onCanvasRef={handleCanvasRef}
           shapes={shapes}
           updateShapePosition={updateShapePosition}
@@ -123,8 +85,6 @@ const WhiteboardContent: React.FC = () => {
           updateArrow={updateArrow}
           addArrow={addArrow}
           deleteArrow={deleteArrow}
-          isVoiceMode={isVoiceMode}
-          toggleVoiceMode={toggleVoiceMode}
         />
       </div>
 

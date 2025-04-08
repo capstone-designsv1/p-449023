@@ -1,5 +1,8 @@
+
 import React from "react";
 import ChatInterface from "./ChatInterface";
+import StickyNoteInput from "./StickyNoteInput";
+import { useChallengeContext } from "@/context/ChallengeContext";
 
 interface StickyNoteType {
   id: string;
@@ -8,14 +11,19 @@ interface StickyNoteType {
   color: string;
 }
 
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
+
 interface WhiteboardSidebarProps {
   description: string;
   notes: StickyNoteType[];
   setNotes: React.Dispatch<React.SetStateAction<StickyNoteType[]>>;
-  onSubmitForEvaluation: (data: any) => void;
+  onSubmitForEvaluation: (data: { finalAnswer?: string, chatHistory?: ChatMessage[] }) => void;
   isEvaluating: boolean;
-  isVoiceMode?: boolean;
-  toggleVoiceMode?: () => void;
 }
 
 const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
@@ -24,23 +32,27 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   setNotes,
   onSubmitForEvaluation,
   isEvaluating,
-  isVoiceMode,
-  toggleVoiceMode
 }) => {
   return (
-    <div className="w-96 border-r border-gray-200 bg-white p-4 overflow-y-auto flex flex-col">
+    <div className="w-96 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
+      {/* Challenge Brief Section */}
       <div className="mb-4">
-        <h2 className="text-lg font-semibold mb-2">Challenge Description</h2>
-        <div className="p-3 bg-gray-50 rounded-md border border-gray-200">
-          {description}
-        </div>
+        <h2 className="text-lg font-semibold mb-2">Challenge Brief</h2>
+        <p className="text-gray-700">{description}</p>
       </div>
       
-      <ChatInterface 
-        onSubmitForEvaluation={onSubmitForEvaluation} 
-        isEvaluating={isEvaluating}
-        isVoiceMode={isVoiceMode}
-        toggleVoiceMode={toggleVoiceMode}
+      {/* Interview Partner Section - Removed "Final Answer" title */}
+      <div className="mb-4">
+        <ChatInterface
+          onSubmitForEvaluation={onSubmitForEvaluation}
+          isEvaluating={isEvaluating}
+        />
+      </div>
+      
+      {/* Sticky Notes Section */}
+      <StickyNoteInput
+        notes={notes}
+        setNotes={setNotes}
       />
     </div>
   );

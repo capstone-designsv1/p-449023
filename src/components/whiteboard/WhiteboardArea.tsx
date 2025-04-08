@@ -2,12 +2,9 @@
 import React, { useRef, useState } from "react";
 import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
 import Toolbar from "@/components/whiteboard/Toolbar";
-import FloatingMicButton from "@/components/whiteboard/FloatingMicButton";
-import TempArrow from "@/components/whiteboard/TempArrow";
-import ArrowList from "@/components/whiteboard/ArrowList";
-import ShapeList from "@/components/whiteboard/ShapeList";
-import StickyNoteList from "@/components/whiteboard/StickyNoteList";
-import { toast } from "sonner";
+import StickyNote from "@/components/whiteboard/StickyNote";
+import Shape from "@/components/whiteboard/Shape";
+import Arrow from "@/components/whiteboard/Arrow";
 
 interface StickyNoteType {
   id: string;
@@ -34,8 +31,8 @@ interface ArrowType {
 }
 
 interface WhiteboardAreaProps {
-  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note";
-  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note") => void;
+  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
+  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square") => void;
   notes: StickyNoteType[];
   updateNotePosition: (id: string, position: { x: number; y: number }) => void;
   updateNoteText: (id: string, text: string) => void;
@@ -48,9 +45,6 @@ interface WhiteboardAreaProps {
   updateArrow?: (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
   addArrow?: (startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
   deleteArrow?: (id: string) => void;
-  isVoiceMode?: boolean;
-  toggleVoiceMode?: () => void;
-  addNote?: (position: { x: number; y: number }) => void;
 }
 
 const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
@@ -68,9 +62,6 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   updateArrow = () => {},
   addArrow = () => {},
   deleteArrow = () => {},
-  isVoiceMode,
-  toggleVoiceMode,
-  addNote = () => {},
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawingArrow, setIsDrawingArrow] = useState(false);
@@ -78,20 +69,14 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   const [arrowEnd, setArrowEnd] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (!containerRef.current) return;
-    
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    if (activeTool === "arrow") {
+    if (activeTool === "arrow" && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
       setArrowStart({ x, y });
       setArrowEnd({ x, y });
       setIsDrawingArrow(true);
-    } else if (activeTool === "note") {
-      addNote({ x, y });
-      toast.success("Sticky note added");
-      setActiveTool("select"); // Switch back to select tool after placing a note
     }
   };
 
@@ -124,43 +109,73 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
       <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
       <WhiteboardCanvas activeTool={activeTool} onCanvasRef={onCanvasRef} />
       
-      {/* Updated floating mic button with additional props */}
-      <FloatingMicButton 
-        isVoiceMode={isVoiceMode} 
-        toggleVoiceMode={toggleVoiceMode}
-        isListening={window.isListening} 
-        toggleListening={window.toggleListening} 
-        isSpeaking={window.isSpeaking} 
-      />
+      {/* Render arrows */}
+      {arrows.map((arrow) => (
+        <Arrow
+          key={arrow.id}
+          id={arrow.id}
+          startPoint={arrow.startPoint}
+          endPoint={arrow.endPoint}
+          color={arrow.color}
+          updateArrow={updateArrow}
+          deleteArrow={deleteArrow}
+        />
+      ))}
       
-      {/* Lists of elements */}
-      <ArrowList 
-        arrows={arrows} 
-        updateArrow={updateArrow} 
-        deleteArrow={deleteArrow} 
-      />
+      {/* Render temporary arrow while drawing */}
+      {isDrawingArrow && (
+        <svg className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          <line
+            x1={arrowStart.x}
+            y1={arrowStart.y}
+            x2={arrowEnd.x}
+            y2={arrowEnd.y}
+            stroke="black"
+            strokeWidth={2}
+            markerEnd="url(#arrowhead)"
+          />
+          <defs>
+            <marker
+              id="arrowhead"
+              markerWidth="10"
+              markerHeight="7"
+              refX="9"
+              refY="3.5"
+              orient="auto"
+            >
+              <polygon points="0 0, 10 3.5, 0 7" fill="black" />
+            </marker>
+          </defs>
+        </svg>
+      )}
       
-      {/* Temporary arrow being drawn */}
-      <TempArrow 
-        startPoint={arrowStart} 
-        endPoint={arrowEnd} 
-        isDrawing={isDrawingArrow} 
-      />
+      {/* Render shapes */}
+      {shapes.map((shape) => (
+        <Shape
+          key={shape.id}
+          id={shape.id}
+          type={shape.type}
+          position={shape.position}
+          color={shape.color}
+          size={shape.size}
+          updatePosition={updateShapePosition}
+          deleteShape={deleteShape}
+        />
+      ))}
       
-      {/* Shapes */}
-      <ShapeList 
-        shapes={shapes} 
-        updateShapePosition={updateShapePosition} 
-        deleteShape={deleteShape} 
-      />
-      
-      {/* Sticky notes */}
-      <StickyNoteList 
-        notes={notes} 
-        updateNotePosition={updateNotePosition} 
-        updateNoteText={updateNoteText} 
-        deleteNote={deleteNote} 
-      />
+      {/* Render sticky notes */}
+      {notes.map((note) => (
+        <StickyNote
+          key={note.id}
+          id={note.id}
+          text={note.text}
+          position={note.position}
+          color={note.color}
+          updatePosition={updateNotePosition}
+          updateText={updateNoteText}
+          deleteNote={deleteNote}
+        />
+      ))}
     </div>
   );
 };

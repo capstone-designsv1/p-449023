@@ -7,10 +7,6 @@ import {
   getVoiceId,
   isElevenLabsConfigured
 } from "@/services/elevenLabsService";
-import { useAudioResources } from "./audio/useAudioResources";
-import { useAudioEvents } from "./audio/useAudioEvents";
-import { useAudioPlayback } from "./audio/useAudioPlayback";
-import { convertTextToSpeech } from "@/services/textToSpeechService";
 
 interface UseTextToSpeechProps {
   onSpeechStart: () => void;
@@ -26,39 +22,6 @@ export const useTextToSpeech = ({
   const [currentVoice, setCurrentVoice] = useState<ElevenLabsVoice>('custom');
   const [isSpeaking, setIsSpeaking] = useState(false);
   
-  // Use our audio resources hook
-  const { 
-    audioRef, 
-    audioUrlRef, 
-    cleanupAudioResources 
-  } = useAudioResources();
-  
-  // Use our audio events hook
-  const { 
-    handleAudioEnded, 
-    handleAudioError 
-  } = useAudioEvents({
-    cleanupAudioResources,
-    setIsPlaying: setIsSpeaking,
-    onPlaybackEnd: onSpeechEnd
-  });
-  
-  // Use our audio playback hook
-  const { 
-    playAudio, 
-    stopAudio 
-  } = useAudioPlayback({
-    audioRef,
-    audioUrlRef,
-    isPlaying: isSpeaking,
-    setIsPlaying: setIsSpeaking,
-    handleAudioEnded,
-    handleAudioError,
-    cleanupAudioResources,
-    onPlaybackStart: onSpeechStart,
-    onPlaybackEnd: onSpeechEnd
-  });
-  
   // Change voice
   const changeVoice = useCallback((voice: ElevenLabsVoice) => {
     setCurrentVoice(voice);
@@ -66,9 +29,12 @@ export const useTextToSpeech = ({
 
   // Stop speaking
   const stopSpeaking = useCallback(() => {
-    console.log("useTextToSpeech: stopSpeaking called");
-    stopAudio();
-  }, [stopAudio]);
+    // Since we're using the Audio API directly, we can't stop it easily
+    // This is a limitation of the current implementation
+    // For now, we'll just update the state
+    setIsSpeaking(false);
+    onSpeechEnd();
+  }, [onSpeechEnd]);
 
   // Text to speech conversion and playback
   const speakText = useCallback(async (text: string) => {
@@ -86,34 +52,27 @@ export const useTextToSpeech = ({
     
     try {
       console.log(`Speaking text (length ${text.length}): "${text.substring(0, 50)}..."`);
+      setIsSpeaking(true);
+      onSpeechStart();
       
       // Get the voice ID based on the current voice
       const voiceId = getVoiceId(currentVoice);
       
-      // Try the modern approach first (direct playback via elevenLabsService)
+      // Use our playVoiceResponse function
       const success = await playVoiceResponse(
         text, 
         voiceId,
-        onSpeechStart,
-        onSpeechEnd
+        undefined, // We've already called onSpeechStart
+        () => {
+          setIsSpeaking(false);
+          onSpeechEnd();
+        }
       );
       
-      if (success) {
-        console.log("Successfully played voice response via elevenLabsService");
-        return true;
+      if (!success) {
+        throw new Error("Failed to play voice response");
       }
       
-      // Fallback to the older approach with convertTextToSpeech
-      console.log("Falling back to convertTextToSpeech method");
-      const result = await convertTextToSpeech(text, voiceId);
-      
-      if (result.error || !result.audioUrl) {
-        console.error("TextToSpeech: Failed to convert text to speech:", result.error);
-        throw new Error(result.error?.message || "Failed to convert text to speech");
-      }
-      
-      // Play the audio URL
-      await playAudio(result.audioUrl);
       return true;
       
     } catch (error) {
@@ -123,7 +82,7 @@ export const useTextToSpeech = ({
       onSpeechEnd();
       return false;
     }
-  }, [isSpeaking, onSpeechStart, onSpeechEnd, currentVoice, playAudio]);
+  }, [isSpeaking, onSpeechStart, onSpeechEnd, currentVoice]);
 
   return {
     isSpeaking,

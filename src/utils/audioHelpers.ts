@@ -13,10 +13,7 @@ export function arrayBufferToBase64(buffer: ArrayBuffer): string {
   
   for (let i = 0; i < bytes.length; i += chunkSize) {
     const chunk = bytes.slice(i, Math.min(i + chunkSize, bytes.length));
-    const binaryChunk = Array.from(chunk)
-      .map(byte => String.fromCharCode(byte))
-      .join('');
-    
+    const binaryChunk = Array.from(chunk).map(b => String.fromCharCode(b)).join('');
     base64 += btoa(binaryChunk);
   }
   
