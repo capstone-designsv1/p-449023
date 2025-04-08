@@ -1,15 +1,17 @@
-
 import React, { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Headphones, VolumeX } from "lucide-react";
+import PlayResponseButton from "./PlayResponseButton";
 
 interface ChatMessageProps {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  isSpeaking?: boolean;
+  toggleSpeaking?: () => void;
 }
 
 // Function to format message with code blocks, links, etc.
@@ -75,7 +77,14 @@ const splitIntoChunks = (content: string): string[] => {
   return mergedChunks;
 };
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ id, role, content, timestamp }) => {
+const ChatMessage: React.FC<ChatMessageProps> = ({ 
+  id, 
+  role, 
+  content, 
+  timestamp, 
+  isSpeaking,
+  toggleSpeaking 
+}) => {
   const [visibleChunks, setVisibleChunks] = useState<number>(1);
   const chunks = role === "assistant" ? splitIntoChunks(content) : [content];
   const hasMoreChunks = visibleChunks < chunks.length;
@@ -123,15 +132,23 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ id, role, content, timestamp 
             <div className="prose prose-sm">
               {formatMessage(chunk)}
             </div>
-            {idx === visibleChunks - 1 && (
+            <div className="flex items-center justify-between mt-1">
               <div
-                className={`text-xs mt-1 ${
+                className={`text-xs ${
                   role === "assistant" ? "text-gray-500" : "text-primary-foreground/80"
                 }`}
               >
                 {timeAgo}
               </div>
-            )}
+              
+              {/* Play Response button for assistant messages */}
+              {role === "assistant" && idx === 0 && toggleSpeaking && (
+                <PlayResponseButton
+                  isSpeaking={!!isSpeaking}
+                  toggleSpeaking={toggleSpeaking}
+                />
+              )}
+            </div>
           </div>
         ))}
         

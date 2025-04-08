@@ -3,7 +3,6 @@ import React from "react";
 import { useInterviewChat } from "@/hooks/useInterviewChat";
 import ChatMessages from "./ChatMessages";
 import InterviewChatInput from "./InterviewChatInput";
-import InterviewVoiceControls from "./InterviewVoiceControls";
 import InterviewVoiceModeToggle from "./InterviewVoiceModeToggle";
 import EndInterviewButton from "./EndInterviewButton";
 import InitializingIndicator from "./InitializingIndicator";
@@ -50,26 +49,15 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         ) : (
           <ChatMessages 
             messages={chatHistory} 
-            messagesEndRef={messagesEndRef} 
+            messagesEndRef={messagesEndRef}
+            isSpeaking={isSpeaking}
+            toggleSpeaking={toggleSpeaking}
           />
         )}
       </div>
 
       <div className="border-t p-4">
         <div className="flex flex-col space-y-4">
-          {isVoiceMode && (
-            <InterviewVoiceControls
-              isListening={isListening}
-              isSpeaking={isSpeaking}
-              isSending={isSending}
-              toggleListening={toggleListening}
-              toggleSpeaking={toggleSpeaking}
-              chatHistoryExists={chatHistory.length > 0}
-              currentVoice={currentVoice}
-              onChangeVoice={changeVoice}
-            />
-          )}
-
           <div className="flex items-center gap-2">
             <InterviewVoiceModeToggle 
               isVoiceMode={isVoiceMode}
@@ -82,6 +70,9 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
               handleSendMessage={handleSendMessage}
               isSending={isSending}
               isInitializing={isInitializing}
+              isListening={isListening}
+              toggleListening={isVoiceMode ? toggleListening : undefined}
+              isVoiceMode={isVoiceMode}
             />
           </div>
 

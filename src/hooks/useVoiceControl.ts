@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { useVoiceMode } from "@/hooks/useVoiceMode";
+import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
+import { useSpeechToText } from "./useSpeechToText";
+import { useTextToSpeech } from "./useTextToSpeech";
+import { ChatMessage } from "@/services/interviewChatService";
 
 interface UseVoiceControlProps {
-  chatHistory: any[];
+  chatHistory: ChatMessage[];
   sendMessage: (message: string) => void;
 }
 
@@ -27,10 +30,11 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     currentVoice,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking
-  } = useVoiceMode({
-    chatHistory,
-    onMessageReady: handleTranscriptReady
+    toggleSpeaking,
+    changeVoice
+  } = useTextToSpeech({
+    onSpeechStart: () => {},
+    onSpeechEnd: () => {}
   });
 
   return {
@@ -43,7 +47,6 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     toggleVoiceMode,
     toggleListening,
     toggleSpeaking,
-    // Keep changeVoice in the returned object for backward compatibility
-    changeVoice: () => {} // No-op since we're using a fixed voice
+    changeVoice
   };
 };

@@ -5,7 +5,6 @@ import ChatMessageList from "./ChatMessageList";
 import ChatInput from "./ChatInput";
 import SubmitEvaluationButton from "./SubmitEvaluationButton";
 import { useChatLogic } from "@/hooks/useChatLogic";
-import VoiceControls from "./VoiceControls";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
 
 interface ChatMessage {
@@ -48,19 +47,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       </div>
       
       {/* Chat Messages */}
-      <ChatMessageList messages={chatHistory} />
-      
-      {/* Voice Controls (when voice mode is enabled) */}
-      {isVoiceMode && (
-        <VoiceControls
-          isListening={isListening}
-          isSpeaking={isSpeaking}
-          isSending={isSending}
-          toggleListening={toggleListening}
-          toggleSpeaking={toggleSpeaking}
-          hasChatHistory={chatHistory.length > 0}
-        />
-      )}
+      <ChatMessageList 
+        messages={chatHistory}
+        isSpeaking={isSpeaking}
+        toggleSpeaking={toggleSpeaking}
+      />
       
       {/* Message Input */}
       <ChatInput 
@@ -70,6 +61,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         setInputText={setInputText}
         isVoiceMode={isVoiceMode}
         toggleVoiceMode={toggleVoiceMode}
+        isListening={isListening}
+        toggleListening={toggleListening}
       />
       
       {/* Submit for Evaluation Button */}

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Mic } from "lucide-react";
+import { Send, Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -12,6 +12,8 @@ interface ChatInputProps {
   setInputText?: (text: string) => void;
   isVoiceMode?: boolean;
   toggleVoiceMode?: () => void;
+  isListening?: boolean;
+  toggleListening?: () => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({ 
@@ -20,7 +22,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   inputText,
   setInputText,
   isVoiceMode,
-  toggleVoiceMode
+  toggleVoiceMode,
+  isListening,
+  toggleListening
 }) => {
   const [newMessage, setNewMessage] = useState("");
   
@@ -63,6 +67,26 @@ const ChatInput: React.FC<ChatInputProps> = ({
         }}
       />
       <div className="flex flex-col gap-2 self-end">
+        {isVoiceMode && toggleListening && (
+          <Button
+            onClick={toggleListening}
+            size="icon"
+            variant="outline"
+            className={cn(
+              "transition-colors",
+              isListening && "bg-red-100 text-red-700 border-red-300 animate-pulse"
+            )}
+            title={isListening ? "Stop listening" : "Start listening"}
+            disabled={isSending}
+          >
+            {isListening ? (
+              <MicOff className="h-4 w-4" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+        )}
+        
         {toggleVoiceMode && (
           <Button
             onClick={toggleVoiceMode}
@@ -77,6 +101,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <Mic className="h-4 w-4" />
           </Button>
         )}
+        
         <Button
           onClick={handleSend}
           size="icon"
