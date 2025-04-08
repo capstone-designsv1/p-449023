@@ -41,7 +41,7 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
         <p className="text-gray-700">{description}</p>
       </div>
       
-      {/* Interview Partner Section - Removed "Final Answer" title */}
+      {/* Interview Partner Section */}
       <div className="mb-4">
         <ChatInterface
           onSubmitForEvaluation={onSubmitForEvaluation}

@@ -1,12 +1,10 @@
 
 import React, { useEffect, useState } from "react";
-import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
-import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
-import WhiteboardArea from "@/components/whiteboard/WhiteboardArea";
-import EvaluationResults from "@/components/whiteboard/EvaluationResults";
-import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeContext";
+import { useChallengeContext } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
+import PracticeScreen from "@/components/whiteboard/PracticeScreen";
 
 const WhiteboardContent: React.FC = () => {
   const { 
@@ -31,71 +29,65 @@ const WhiteboardContent: React.FC = () => {
     }
   }, [activeChallenge]);
 
-  return (
-    <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
-      {/* Header */}
-      {isLoading ? (
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
         <div className="bg-white border-b border-gray-200 p-4">
           <div className="container mx-auto">
             <Skeleton className="h-8 w-64 mb-2" />
             <Skeleton className="h-4 w-40" />
           </div>
         </div>
-      ) : activeChallenge && (
-        <WhiteboardHeader 
-          title={activeChallenge.title} 
-          company={activeChallenge.company}
-          onBackToList={handleBackToList}
-        />
-      )}
-
-      {/* Main content */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        {isLoading ? (
+        <div className="flex flex-1">
           <div className="w-96 border-r border-gray-200 bg-white p-4">
             <Skeleton className="h-6 w-40 mb-2" />
             <Skeleton className="h-32 w-full mb-4" />
             <Skeleton className="h-6 w-40 mb-2" />
             <Skeleton className="h-64 w-full" />
           </div>
-        ) : (
-          <WhiteboardSidebar 
-            description={activeChallenge?.description || ""}
+          <div className="flex-1">
+            <Skeleton className="h-full w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
+      {activeChallenge && (
+        <>
+          <WhiteboardHeader 
+            title={activeChallenge.title} 
+            company={activeChallenge.company}
+            onBackToList={handleBackToList}
+          />
+          
+          <PracticeScreen 
+            challenge={activeChallenge}
             notes={notes}
-            setNotes={useChallengeContext().setNotes}
+            updateNotePosition={updateNotePosition}
+            updateNoteText={updateNoteText}
+            deleteNote={deleteNote}
             onSubmitForEvaluation={handleSubmitForEvaluation}
             isEvaluating={isEvaluating}
+            showResults={showResults}
+            evaluationScore={evaluationScore}
+            evaluationFeedback={evaluationFeedback}
+            onCloseResults={handleCloseResults}
+            canvasRef={handleCanvasRef}
+            activeTool={activeTool}
+            setActiveTool={setActiveTool}
+            shapes={shapes}
+            updateShapePosition={updateShapePosition}
+            deleteShape={deleteShape}
+            arrows={arrows}
+            updateArrow={updateArrow}
+            addArrow={addArrow}
+            deleteArrow={deleteArrow}
           />
-        )}
-
-        {/* Whiteboard area */}
-        <WhiteboardArea 
-          activeTool={activeTool}
-          setActiveTool={setActiveTool}
-          notes={notes}
-          updateNotePosition={updateNotePosition}
-          updateNoteText={updateNoteText}
-          deleteNote={deleteNote}
-          onCanvasRef={handleCanvasRef}
-          shapes={shapes}
-          updateShapePosition={updateShapePosition}
-          deleteShape={deleteShape}
-          arrows={arrows}
-          updateArrow={updateArrow}
-          addArrow={addArrow}
-          deleteArrow={deleteArrow}
-        />
-      </div>
-
-      {/* Evaluation Results Dialog */}
-      <EvaluationResults
-        isOpen={showResults}
-        onClose={handleCloseResults}
-        score={evaluationScore}
-        feedback={evaluationFeedback}
-        isLoading={isEvaluating}
-      />
+        </>
+      )}
     </div>
   );
 };
