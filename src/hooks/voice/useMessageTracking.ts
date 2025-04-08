@@ -1,5 +1,5 @@
 
-import { useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { ChatMessage } from "@/services/interviewChatService";
 
 interface UseMessageTrackingProps {
@@ -9,10 +9,11 @@ interface UseMessageTrackingProps {
   isListening: boolean;
   stopListening: () => void;
   isAutoSpeakEnabled: boolean;
+  isSpeaking?: boolean;
 }
 
 /**
- * Hook to track and handle new messages in the chat
+ * Hook to track and automatically speak new assistant messages
  */
 export const useMessageTracking = ({
   chatHistory,
@@ -20,63 +21,78 @@ export const useMessageTracking = ({
   speakText,
   isListening,
   stopListening,
-  isAutoSpeakEnabled
+  isAutoSpeakEnabled,
+  isSpeaking = false
 }: UseMessageTrackingProps) => {
-  const lastAssistantMessageRef = useRef<string | null>(null);
+  const lastAssistantMessageIdRef = useRef<string | null>(null);
   const isInitializedRef = useRef(false);
-  const previousChatLengthRef = useRef(0);
+  const lastSpeakTimeRef = useRef(0);
   
-  // Auto-speak AI responses when in voice mode
   useEffect(() => {
-    if (isVoiceMode && chatHistory.length > 0 && isInitializedRef.current && isAutoSpeakEnabled) {
-      // Check if we have a new message
-      if (chatHistory.length > previousChatLengthRef.current) {
-        const lastMessage = chatHistory[chatHistory.length - 1];
-        previousChatLengthRef.current = chatHistory.length;
+    // Skip initial render to avoid speaking on component mount
+    if (!isInitializedRef.current) {
+      console.log("MessageTracking: Initializing message tracking");
+      isInitializedRef.current = true;
+      
+      // Store initial last message ID if there are messages
+      if (chatHistory.length > 0) {
+        const assistantMessages = chatHistory.filter(msg => msg.role === 'assistant');
+        if (assistantMessages.length > 0) {
+          const lastMsg = assistantMessages[assistantMessages.length - 1];
+          lastAssistantMessageIdRef.current = lastMsg.id;
+          console.log(`MessageTracking: Initial last assistant message ID: ${lastMsg.id}`);
+        }
+      }
+      return;
+    }
+    
+    // Only proceed if in voice mode and auto-speak is enabled
+    if (!isVoiceMode || !isAutoSpeakEnabled) {
+      return;
+    }
+    
+    // Find the last assistant message and speak it if it's new
+    const assistantMessages = chatHistory.filter(msg => msg.role === 'assistant');
+    
+    if (assistantMessages.length > 0) {
+      const lastMsg = assistantMessages[assistantMessages.length - 1];
+      
+      // Check if this is a new message (different ID)
+      if (lastMsg.id !== lastAssistantMessageIdRef.current) {
+        console.log(`MessageTracking: New message detected - ID: ${lastMsg.id} (previous: ${lastAssistantMessageIdRef.current})`);
+        lastAssistantMessageIdRef.current = lastMsg.id;
         
-        // Only auto-speak new assistant messages
-        if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
-          console.log("Voice mode: New assistant message detected, auto-speaking");
-          lastAssistantMessageRef.current = lastMessage.content;
+        // Prevent duplicate speaking by checking time since last speak
+        const now = Date.now();
+        if (now - lastSpeakTimeRef.current > 2000 && !isSpeaking) {
+          console.log("MessageTracking: Speaking new assistant message");
+          lastSpeakTimeRef.current = now;
           
-          // Make sure we stop listening while AI is speaking
+          // If we're listening, stop listening while the AI speaks
           if (isListening) {
+            console.log("MessageTracking: Stopping listening for AI to speak");
             stopListening();
           }
           
-          // Set a flag for user interaction if needed
+          // Mark that user has interacted with the page
           document.documentElement.setAttribute('data-user-interacted', 'true');
           
           // Short delay to ensure UI is ready
           setTimeout(() => {
-            speakText(lastMessage.content)
-              .catch(error => {
-                console.error("Failed to auto-speak message:", error);
-              });
-          }, 300);
+            speakText(lastMsg.content).catch(error => {
+              console.error("MessageTracking: Failed to speak new message:", error);
+            });
+          }, 500);
+        } else if (isSpeaking) {
+          console.log("MessageTracking: Already speaking, not starting new speech");
+        } else {
+          console.log(`MessageTracking: Skipping duplicate speech (last speak: ${now - lastSpeakTimeRef.current}ms ago)`);
         }
       }
     }
-  }, [chatHistory, isVoiceMode, speakText, isListening, stopListening, isAutoSpeakEnabled]);
-  
-  // Set initialized after first render
-  useEffect(() => {
-    isInitializedRef.current = true;
-    previousChatLengthRef.current = chatHistory.length;
-    
-    // Add a click listener to document to handle user interaction requirement
-    const handleUserInteraction = () => {
-      document.documentElement.setAttribute('data-user-interacted', 'true');
-    };
-    
-    document.addEventListener('click', handleUserInteraction);
-    
-    return () => {
-      document.removeEventListener('click', handleUserInteraction);
-    };
-  }, [chatHistory.length]);
+  }, [chatHistory, isVoiceMode, speakText, isListening, stopListening, isAutoSpeakEnabled, isSpeaking]);
   
   return {
-    lastAssistantMessageRef
+    lastAssistantMessageIdRef
   };
 };

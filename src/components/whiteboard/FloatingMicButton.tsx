@@ -22,6 +22,10 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
   if (!toggleVoiceMode) return null;
   
   const handleClick = () => {
+    console.log("FloatingMicButton: Button clicked");
+    console.log("FloatingMicButton: Current states - isVoiceMode:", isVoiceMode, 
+                "isListening:", isListening, "isSpeaking:", isSpeaking);
+    
     // If not in voice mode, enable voice mode AND start listening immediately
     if (!isVoiceMode) {
       console.log("FloatingMicButton: Enabling voice mode");
@@ -33,7 +37,7 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
           console.log("FloatingMicButton: Auto-starting listening after enabling voice mode");
           toggleListening();
         }
-      }, 300);
+      }, 500);
     } 
     // If already in voice mode, just toggle listening state
     else if (toggleListening) {
@@ -72,7 +76,7 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
       {isSpeaking ? (
         <Volume2 className="h-5 w-5" />
       ) : isListening ? (
-        <MicOff className="h-5 w-5" />
+        <Mic className="h-5 w-5" />
       ) : (
         <Mic className="h-5 w-5" />
       )}

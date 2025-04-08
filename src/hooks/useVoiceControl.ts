@@ -1,5 +1,6 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import { useAutoSpeakConfig } from "./voice/useAutoSpeakConfig";
 import { useMessageTracking } from "./voice/useMessageTracking";
 import { useInitialMessage } from "./voice/useInitialMessage";
@@ -20,6 +21,7 @@ export const useVoiceControl = ({
 }: UseVoiceControlProps) => {
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [inputText, setInputText] = useState('');
+  const firstInitializationRef = useRef(true);
   
   // Use our auto-speak configuration hook
   const { autoSpeakEnabledRef, isAutoSpeakEnabled, toggleAutoSpeak } = useAutoSpeakConfig();
@@ -41,10 +43,14 @@ export const useVoiceControl = ({
     console.log("Voice mode: AI speaking ended");
     
     // Auto-start listening again after AI finishes speaking
-    if (isVoiceMode && !isListening && autoSpeakEnabledRef.current) {
+    if (isVoiceMode && autoSpeakEnabledRef.current) {
+      console.log("Voice mode: Auto-starting listening after AI finished speaking");
       setTimeout(() => {
-        startListening();
-      }, 500);
+        if (!isListening) {
+          console.log("Voice mode: Starting listening after speech");
+          startListening();
+        }
+      }, 800);
     }
   };
   
@@ -54,7 +60,9 @@ export const useVoiceControl = ({
     startListening, 
     stopListening 
   } = useSpeechToText({
-    onTranscriptReady: handleTranscriptReady
+    onTranscriptReady: handleTranscriptReady,
+    maxRecordingTime: 30000, // 30 seconds max
+    silenceDetectionTime: 10000 // 10 seconds of silence
   });
 
   const {
@@ -68,61 +76,69 @@ export const useVoiceControl = ({
     onSpeechEnd: handleSpeechEnd
   });
 
+  // Use our initial message hook to handle speaking the first message, with reset capability
+  const { initialMessageSpokenRef, resetInitialMessageSpoken } = useInitialMessage({
+    initialMessage,
+    isVoiceMode,
+    speakText
+  });
+  
   // Use our message tracking hook to auto-speak assistant messages
+  // Only track and speak new messages, not initial ones
   useMessageTracking({
     chatHistory,
     isVoiceMode,
     speakText,
     isListening,
     stopListening,
-    isAutoSpeakEnabled: autoSpeakEnabledRef.current
-  });
-  
-  // Use our initial message hook to handle speaking the first message
-  useInitialMessage({
-    initialMessage,
-    isVoiceMode,
-    speakText
+    isAutoSpeakEnabled: autoSpeakEnabledRef.current,
+    isSpeaking
   });
 
   // Toggle voice mode on/off
   const toggleVoiceMode = useCallback(() => {
     if (!isVoiceMode) {
       // Ask for microphone permission before enabling
+      console.log("Voice mode: Requesting microphone permission");
       navigator.mediaDevices.getUserMedia({ audio: true })
         .then(() => {
+          console.log("Voice mode: Microphone permission granted");
           setIsVoiceMode(true);
-          console.log("Voice mode enabled");
+          toast.success("Voice mode enabled");
           
           // Mark that user has interacted with the page
           document.documentElement.setAttribute('data-user-interacted', 'true');
           
-          // Speak initial message if available and not yet spoken
-          if (initialMessage) {
+          // Only auto-start listening on first voice mode activation if there's no initial message
+          if (!initialMessage && firstInitializationRef.current && autoSpeakEnabledRef.current) {
+            firstInitializationRef.current = false;
             setTimeout(() => {
-              speakText(initialMessage).catch(err => {
-                console.error("Error speaking initial message after enabling voice mode:", err);
-              });
-            }, 500);
-          }
-          // If there's no initial message, start listening
-          else if (autoSpeakEnabledRef.current) {
-            setTimeout(() => {
+              console.log("Voice mode: Auto-starting listening (no initial message)");
               startListening();
-            }, 500);
+            }, 800);
           }
         })
         .catch((err) => {
-          console.error("Microphone permission denied:", err);
+          console.error("Voice mode: Microphone permission denied:", err);
+          toast.error("Microphone access is required for voice mode");
         });
     } else {
       // Disable voice mode
-      if (isListening) stopListening();
-      if (isSpeaking) stopSpeaking();
+      if (isListening) {
+        console.log("Voice mode: Stopping listening before disabling voice mode");
+        stopListening();
+      }
+      if (isSpeaking) {
+        console.log("Voice mode: Stopping speaking before disabling voice mode");
+        stopSpeaking();
+      }
       setIsVoiceMode(false);
-      console.log("Voice mode disabled");
+      resetInitialMessageSpoken();
+      firstInitializationRef.current = true;
+      toast.success("Voice mode disabled");
+      console.log("Voice mode: Voice mode disabled");
     }
-  }, [isVoiceMode, initialMessage, isListening, isSpeaking, stopListening, stopSpeaking, startListening, speakText]);
+  }, [isVoiceMode, initialMessage, isListening, isSpeaking, stopListening, stopSpeaking, startListening, autoSpeakEnabledRef, resetInitialMessageSpoken]);
 
   // Toggle listening state
   const toggleListening = useCallback(() => {

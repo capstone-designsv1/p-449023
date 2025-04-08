@@ -1,5 +1,6 @@
 
 import { useRef, useEffect } from "react";
+import { toast } from "sonner";
 
 interface UseInitialMessageProps {
   initialMessage?: string;
@@ -20,8 +21,8 @@ export const useInitialMessage = ({
   // Speak initial message if provided
   useEffect(() => {
     if (initialMessage && !initialMessageSpokenRef.current && isVoiceMode) {
+      console.log("Voice mode: Speaking initial message via useInitialMessage hook");
       initialMessageSpokenRef.current = true;
-      console.log("Voice mode: Speaking initial message");
       
       // Mark that user has interacted with the page
       document.documentElement.setAttribute('data-user-interacted', 'true');
@@ -29,12 +30,23 @@ export const useInitialMessage = ({
       setTimeout(() => {
         speakText(initialMessage).catch(err => {
           console.error("Error speaking initial message:", err);
+          toast.error("Failed to read challenge description. Please try again.");
         });
       }, 1000);
     }
   }, [initialMessage, isVoiceMode, speakText]);
   
+  // Reset the spoken flag when voice mode changes
+  useEffect(() => {
+    if (!isVoiceMode) {
+      initialMessageSpokenRef.current = false;
+    }
+  }, [isVoiceMode]);
+  
   return {
-    initialMessageSpokenRef
+    initialMessageSpokenRef,
+    resetInitialMessageSpoken: () => {
+      initialMessageSpokenRef.current = false;
+    }
   };
 };
