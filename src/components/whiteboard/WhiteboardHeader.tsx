@@ -1,6 +1,7 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface WhiteboardHeaderProps {
   title: string;
@@ -22,10 +23,10 @@ const WhiteboardHeader: React.FC<WhiteboardHeaderProps> = ({
           </h1>
           <p className="text-gray-600">{company}</p>
         </div>
-        <div>
+        <div className="flex gap-3">
           <Button 
             onClick={onBackToList}
-            className="bg-gray-100 hover:bg-gray-200 text-black rounded-full px-6 py-2"
+            className="bg-gray-100 text-black border border-gray-300 hover:bg-gray-200"
           >
             Back to Challenges
           </Button>
