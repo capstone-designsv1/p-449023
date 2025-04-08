@@ -1,3 +1,4 @@
+
 import React, { useRef, useState } from "react";
 import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
 import Toolbar from "@/components/whiteboard/Toolbar";
@@ -128,6 +129,7 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
         toggleVoiceMode={toggleVoiceMode}
         isListening={window.isListening} // Pass down isListening state
         toggleListening={window.toggleListening} // Pass down toggleListening function
+        isSpeaking={false} // We'll update this in future iterations
       />
       
       {/* Render arrows */}

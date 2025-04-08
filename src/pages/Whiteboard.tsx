@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -38,9 +39,12 @@ const WhiteboardContent: React.FC = () => {
     isVoiceMode, 
     toggleVoiceMode,
     isListening,
+    isSpeaking,
     toggleListening 
   } = useVoiceControl({
-    chatHistory
+    chatHistory,
+    // Pass the initial message (challenge description) to be spoken automatically
+    initialMessage: activeChallenge?.description
   });
 
   // Make voice control functions globally available for components

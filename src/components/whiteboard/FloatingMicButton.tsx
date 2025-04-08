@@ -9,13 +9,15 @@ interface FloatingMicButtonProps {
   toggleVoiceMode?: () => void;
   isListening?: boolean;
   toggleListening?: () => void;
+  isSpeaking?: boolean;
 }
 
 const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ 
   isVoiceMode, 
   toggleVoiceMode,
   isListening,
-  toggleListening
+  toggleListening,
+  isSpeaking
 }) => {
   if (!toggleVoiceMode) return null;
   
@@ -39,8 +41,8 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
   
   // Determine the button color based on the state
   // White: Not in voice mode
-  // Green: In voice mode but not listening
-  // Red: In voice mode and listening
+  // Green: In voice mode and listening
+  // Pulsing Green: When speaking
   return (
     <Button
       onClick={handleClick}
@@ -51,10 +53,18 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
         isVoiceMode 
           ? isListening 
             ? "bg-green-100 text-green-700 border-green-300" 
-            : "bg-white text-gray-700 border-gray-200"
+            : isSpeaking
+              ? "bg-blue-100 text-blue-700 border-blue-300 animate-pulse"
+              : "bg-white text-gray-700 border-gray-200"
           : "bg-white text-gray-700 border-gray-200"
       )}
-      title={isVoiceMode ? (isListening ? "Stop listening" : "Start listening") : "Enable voice mode"}
+      title={isVoiceMode 
+        ? isListening 
+          ? "Stop listening" 
+          : isSpeaking 
+            ? "AI is speaking" 
+            : "Start listening" 
+        : "Enable voice mode"}
     >
       <Mic className="h-5 w-5" />
     </Button>

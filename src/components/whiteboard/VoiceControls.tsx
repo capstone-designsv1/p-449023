@@ -1,6 +1,5 @@
+
 import React from "react";
-import { Button } from "@/components/ui/button";
-import { Headphones, VolumeX } from "lucide-react";
 import { ElevenLabsVoice } from "@/hooks/useTextToSpeech";
 
 interface VoiceControlsProps {
@@ -17,31 +16,12 @@ interface VoiceControlsProps {
 const VoiceControls: React.FC<VoiceControlsProps> = ({
   isSpeaking,
   isSending,
-  toggleSpeaking,
   hasChatHistory
 }) => {
+  // We've removed the Hear Response button as the AI will auto-speak
   return (
     <div className="flex justify-center space-x-3 my-2">
-      {/* Listen button removed - functionality moved to floating mic button */}
-      
-      {hasChatHistory && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={toggleSpeaking}
-          className={`transition-colors ${isSpeaking ? 'bg-blue-100 text-blue-700 border-blue-300' : ''}`}
-        >
-          {isSpeaking ? (
-            <>
-              <VolumeX className="h-4 w-4 mr-1" /> Stop
-            </>
-          ) : (
-            <>
-              <Headphones className="h-4 w-4 mr-1" /> Hear Response
-            </>
-          )}
-        </Button>
-      )}
+      {/* All buttons removed - functionality now handled automatically */}
     </div>
   );
 };
