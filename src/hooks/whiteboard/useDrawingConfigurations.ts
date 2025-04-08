@@ -16,7 +16,9 @@ export const useDrawingConfigurations = () => {
     text: { strokeWidth: 1, strokeColor: "#000000" },
     arrow: { strokeWidth: 2, strokeColor: "#000000" },
     circle: { strokeWidth: 2, strokeColor: "#000000", fillColor: "rgba(0,0,0,0.1)" },
-    square: { strokeWidth: 2, strokeColor: "#000000", fillColor: "rgba(0,0,0,0.1)" }
+    square: { strokeWidth: 2, strokeColor: "#000000", fillColor: "rgba(0,0,0,0.1)" },
+    note: { strokeWidth: 1, strokeColor: "#000000" },
+    line: { strokeWidth: 2, strokeColor: "#000000" }
   };
   
   const [toolConfigurations, setToolConfigurations] = useState<Record<WhiteboardTool, ToolConfiguration>>(defaultConfigurations);

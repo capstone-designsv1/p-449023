@@ -8,6 +8,7 @@ import Shape from "@/components/whiteboard/Shape";
 import Arrow from "@/components/whiteboard/Arrow";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
 import { useChallengeContext } from "@/context/ChallengeContext";
+import { WhiteboardTool } from "@/hooks/whiteboard/useWhiteboardTools";
 
 interface StickyNoteType {
   id: string;
@@ -34,8 +35,8 @@ interface ArrowType {
 }
 
 interface WhiteboardAreaProps {
-  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note" | "line";
-  setActiveTool: (tool: any) => void;
+  activeTool: WhiteboardTool;
+  setActiveTool: (tool: WhiteboardTool) => void;
   notes: StickyNoteType[];
   updateNotePosition: (id: string, position: { x: number; y: number }) => void;
   updateNoteText: (id: string, text: string) => void;
@@ -74,6 +75,8 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   
   const { isVoiceMode, isListening, toggleListening } = useVoiceControl({
     chatHistory,
+    sendMessage: () => {},
+    // Use an empty function as onMessageReady since we're not using it here
     onMessageReady: () => {}
   });
 

@@ -1,12 +1,14 @@
+
 import { useState } from "react";
 import { useVoiceMode } from "@/hooks/useVoiceMode";
 
 interface UseVoiceControlProps {
   chatHistory: any[];
   sendMessage: (message: string) => void;
+  onMessageReady?: (text: string) => void; // Add this optional property
 }
 
-export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlProps) => {
+export const useVoiceControl = ({ chatHistory, sendMessage, onMessageReady }: UseVoiceControlProps) => {
   const [inputText, setInputText] = useState("");
   
   // Handle transcribed speech text
@@ -16,6 +18,10 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     // Auto-send the transcribed message
     if (text.trim()) {
       sendMessage(text);
+    }
+    // Forward the transcript to the optional callback if provided
+    if (onMessageReady) {
+      onMessageReady(text);
     }
   };
   
