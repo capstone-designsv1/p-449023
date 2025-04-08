@@ -28,9 +28,10 @@ const ChatInput: React.FC<ChatInputProps> = ({
   // Initialize speech-to-text functionality
   const { isListening, startListening, stopListening } = useSpeechToText({
     onTranscriptReady: (text) => {
-      setNewMessage(prev => prev + " " + text);
+      const updatedText = newMessage + " " + text;
+      setNewMessage(updatedText);
       if (setInputText) {
-        setInputText(prev => prev + " " + text);
+        setInputText(updatedText);
       }
     }
   });
@@ -98,7 +99,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           </Button>
         )}
         
-        {/* New microphone toggle button */}
+        {/* Microphone toggle button */}
         <Button
           onClick={toggleListening}
           size="icon"
