@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -8,6 +7,14 @@ import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeConte
 import { useWhiteboard } from "@/hooks/useWhiteboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
+
+// Declare global window interface to store voice control functions
+declare global {
+  interface Window {
+    isListening?: boolean;
+    toggleListening?: () => void;
+  }
+}
 
 const WhiteboardContent: React.FC = () => {
   const { 
@@ -26,11 +33,27 @@ const WhiteboardContent: React.FC = () => {
     arrows, updateArrow, addArrow, deleteArrow
   } = useWhiteboard();
 
-  // Voice control for the entire whiteboard - fixed by removing sendMessage 
-  // since it's now optional in the hook
-  const { isVoiceMode, toggleVoiceMode } = useVoiceControl({
+  // Voice control for the entire whiteboard
+  const { 
+    isVoiceMode, 
+    toggleVoiceMode,
+    isListening,
+    toggleListening 
+  } = useVoiceControl({
     chatHistory
   });
+
+  // Make voice control functions globally available for components
+  useEffect(() => {
+    window.isListening = isListening;
+    window.toggleListening = toggleListening;
+    
+    return () => {
+      // Clean up global references when component unmounts
+      delete window.isListening;
+      delete window.toggleListening;
+    };
+  }, [isListening, toggleListening]);
 
   useEffect(() => {
     if (activeChallenge) {
@@ -40,7 +63,6 @@ const WhiteboardContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
-      {/* Header */}
       {isLoading ? (
         <div className="bg-white border-b border-gray-200 p-4">
           <div className="container mx-auto">
@@ -78,7 +100,7 @@ const WhiteboardContent: React.FC = () => {
           />
         )}
 
-        {/* Whiteboard area */}
+        {/* Whiteboard area with updated props */}
         <WhiteboardArea 
           activeTool={activeTool}
           setActiveTool={setActiveTool}

@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from "react";
 import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
 import Toolbar from "@/components/whiteboard/Toolbar";
@@ -123,8 +122,13 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
       <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
       <WhiteboardCanvas activeTool={activeTool} onCanvasRef={onCanvasRef} />
       
-      {/* Floating mic button */}
-      <FloatingMicButton isVoiceMode={isVoiceMode} toggleVoiceMode={toggleVoiceMode} />
+      {/* Updated floating mic button with additional props */}
+      <FloatingMicButton 
+        isVoiceMode={isVoiceMode} 
+        toggleVoiceMode={toggleVoiceMode}
+        isListening={window.isListening} // Pass down isListening state
+        toggleListening={window.toggleListening} // Pass down toggleListening function
+      />
       
       {/* Render arrows */}
       {arrows.map((arrow) => (
