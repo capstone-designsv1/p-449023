@@ -23,6 +23,9 @@ export const useVoiceControl = ({
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [inputText, setInputText] = useState('');
   
+  // Create a ref for initial message processed state
+  const initialMessageProcessedRef = useRef(false);
+  
   // Use our auto-speak configuration hook
   const { autoSpeakEnabledRef, isAutoSpeakEnabled, toggleAutoSpeak } = useAutoSpeakConfig();
   
@@ -93,10 +96,11 @@ export const useVoiceControl = ({
   });
 
   // Use our initial message hook to handle speaking the first message
-  const { initialMessageSpokenRef, resetInitialMessageSpoken } = useInitialMessage({
+  const { resetInitialMessageSpoken } = useInitialMessage({
     initialMessage,
     isVoiceMode,
-    speakText
+    speakText,
+    initialMessageProcessedRef
   });
   
   // Use our message tracking hook to auto-speak assistant messages

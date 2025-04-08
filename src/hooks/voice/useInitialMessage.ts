@@ -1,12 +1,12 @@
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 interface UseInitialMessageProps {
   initialMessage?: string;
   isVoiceMode: boolean;
   speakText: (text: string) => Promise<boolean>;
-  initialMessageProcessedRef: React.MutableRefObject<boolean>;
+  initialMessageProcessedRef?: React.MutableRefObject<boolean>;
 }
 
 /**
@@ -18,11 +18,15 @@ export const useInitialMessage = ({
   speakText,
   initialMessageProcessedRef
 }: UseInitialMessageProps) => {
+  // Create a local ref if none was provided
+  const localInitialMessageProcessedRef = useRef(false);
+  const effectiveRef = initialMessageProcessedRef || localInitialMessageProcessedRef;
+  
   // Speak initial message if provided
   useEffect(() => {
-    if (isVoiceMode && initialMessage && !initialMessageProcessedRef.current) {
+    if (isVoiceMode && initialMessage && !effectiveRef.current) {
       console.log("Voice assistant: Processing initial message for the first time");
-      initialMessageProcessedRef.current = true;
+      effectiveRef.current = true;
       
       // Mark that user has interacted with the page
       document.documentElement.setAttribute('data-user-interacted', 'true');
@@ -35,11 +39,11 @@ export const useInitialMessage = ({
         });
       }, 1000);
     }
-  }, [isVoiceMode, initialMessage, speakText, initialMessageProcessedRef]);
+  }, [isVoiceMode, initialMessage, speakText, effectiveRef]);
   
   return {
     resetInitialMessageSpoken: () => {
-      initialMessageProcessedRef.current = false;
+      effectiveRef.current = false;
     }
   };
 };

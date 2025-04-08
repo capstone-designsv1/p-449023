@@ -1,8 +1,11 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useMediaRecorder } from "./speech/useMediaRecorder";
 import { useAudioProcessing } from "./speech/useAudioProcessing";
+import { useRecordingTimer } from "./speech/useRecordingTimer";
+import { useSilenceDetection } from "./speech/useSilenceDetection";
+import { useErrorHandling } from "./speech/useErrorHandling";
 import { convertAudioToBase64 } from "@/utils/audioProcessingUtils";
 import { transcribeAudio } from "@/services/speechToTextService";
 
@@ -18,11 +21,29 @@ export const useSpeechToText = ({
   silenceDetectionTime = 10000 // 10 seconds of silence
 }: UseSpeechToTextProps) => {
   const [isListening, setIsListening] = useState(false);
-  const timerRef = useRef<number | null>(null);
-  const recordingStartTimeRef = useRef<number>(0);
-  const lastErrorTimeRef = useRef<number>(0);
+  
+  // Handle errors with dedicated hook
+  const { 
+    handleRecordingError, 
+    handleTranscriptionError 
+  } = useErrorHandling();
 
-  // Define what happens when recording stops
+  // Handle recording time limits
+  const { 
+    startTimer, 
+    clearTimer, 
+    getRecordingDuration 
+  } = useRecordingTimer({
+    maxRecordingTime,
+    onMaxTimeReached: () => {
+      if (isListening) {
+        console.log("Speech-to-Text: Max recording time reached, stopping");
+        stopListening();
+      }
+    }
+  });
+
+  // Process audio recording results
   const handleRecordingComplete = async (audioChunks: Blob[]) => {
     console.log(`Speech-to-Text: Recording completed (${audioChunks.length} chunks)`);
     
@@ -59,14 +80,7 @@ export const useSpeechToText = ({
         toast.warning("No speech detected. Please try speaking again.");
       }
     } catch (error) {
-      console.error('Speech-to-Text: Error processing recording:', error);
-      
-      // Prevent toast spam
-      const now = Date.now();
-      if (now - lastErrorTimeRef.current > 5000) {
-        lastErrorTimeRef.current = now;
-        toast.error('Failed to transcribe your speech. Please try again.');
-      }
+      handleTranscriptionError(error);
     } finally {
       setIsListening(false);
     }
@@ -84,11 +98,11 @@ export const useSpeechToText = ({
     }
   });
 
-  // Set up audio processing and silence detection
+  // Set up silence detection
   const { 
-    setupSilenceDetection, 
-    cleanupAudioResources 
-  } = useAudioProcessing({
+    handleAudioLevelChange, 
+    cleanupTimers: cleanupSilenceTimers 
+  } = useSilenceDetection({
     isListening,
     onSilenceDetected: () => {
       if (isListening) {
@@ -99,16 +113,18 @@ export const useSpeechToText = ({
     silenceDetectionTime
   });
 
-  // Clean up function for all timers
-  const cleanupTimers = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
-    }
-  };
+  // Set up audio processing and silence detection
+  const { 
+    setupSilenceDetection, 
+    cleanupAudioResources 
+  } = useAudioProcessing({
+    isListening,
+    onAudioLevelChange: handleAudioLevelChange,
+    silenceDetectionTime
+  });
 
   // Main function to start listening
-  const startListening = async () => {
+  const startListening = useCallback(async () => {
     try {
       if (isListening) {
         console.log("Speech-to-Text: Already listening, ignoring start request");
@@ -117,10 +133,7 @@ export const useSpeechToText = ({
       
       console.log("Speech-to-Text: Starting microphone recording");
       
-      // Record the starting time
-      recordingStartTimeRef.current = Date.now();
-      
-      // Start recording
+      // Start recording with timer
       const stream = await startRecording();
       if (!stream) {
         console.error("Speech-to-Text: Failed to get stream from startRecording");
@@ -130,56 +143,30 @@ export const useSpeechToText = ({
       console.log("Speech-to-Text: MediaRecorder initialized successfully");
       setIsListening(true);
       
+      // Start recording timer
+      startTimer();
+      
       // Set up silence detection
       console.log(`Speech-to-Text: Setting up silence detection (${silenceDetectionTime}ms)`);
       setupSilenceDetection(stream);
       
-      // Set up max recording time
-      console.log(`Speech-to-Text: Setting max recording time to ${maxRecordingTime}ms`);
-      timerRef.current = window.setTimeout(() => {
-        console.log("Speech-to-Text: Max recording time reached, stopping");
-        if (isListening) {
-          stopRecording();
-          cleanupTimers();
-          cleanupAudioResources();
-          setIsListening(false);
-          toast.info("Processing your speech...", { duration: 1500 });
-        }
-      }, maxRecordingTime);
-      
       toast.info("Listening... Speak now", { duration: 3000 });
     } catch (error) {
-      console.error('Speech-to-Text: Error starting to listen:', error);
-      
-      // More specific error messages
-      if (error instanceof DOMException) {
-        if (error.name === 'NotAllowedError') {
-          toast.error('Microphone access denied. Please check your browser permissions.');
-        } else if (error.name === 'NotFoundError') {
-          toast.error('No microphone found. Please connect a microphone and try again.');
-        } else if (error.name === 'NotReadableError') {
-          toast.error('Your microphone is busy or unavailable. Please close other apps using it.');
-        } else {
-          toast.error(`Microphone error: ${error.name}. Please check your device.`);
-        }
-      } else {
-        toast.error('Could not access your microphone. Please check permissions and try again.');
-      }
-      
+      handleRecordingError(error);
       setIsListening(false);
     }
-  };
+  }, [isListening, startRecording, setupSilenceDetection, startTimer, silenceDetectionTime]);
 
   // Function to stop listening
-  const stopListening = () => {
+  const stopListening = useCallback(() => {
     if (isListening) {
-      const recordingDuration = Date.now() - recordingStartTimeRef.current;
+      const recordingDuration = getRecordingDuration();
       console.log(`Speech-to-Text: Stopping listening after ${recordingDuration}ms`);
       
       stopRecording();
-      cleanupTimers();
+      clearTimer();
+      cleanupSilenceTimers();
       cleanupAudioResources();
-      setIsListening(false);
       
       if (recordingDuration > 500) { // Only show toast if we recorded for at least half a second
         toast.info("Processing your speech...", { duration: 1500 });
@@ -187,7 +174,7 @@ export const useSpeechToText = ({
     } else {
       console.log("Speech-to-Text: Not listening, ignoring stop request");
     }
-  };
+  }, [isListening, stopRecording, clearTimer, cleanupSilenceTimers, cleanupAudioResources, getRecordingDuration]);
 
   // Cleanup when component unmounts
   useEffect(() => {
@@ -195,11 +182,12 @@ export const useSpeechToText = ({
       console.log("Speech-to-Text: Cleaning up on unmount");
       if (isListening) {
         stopRecording();
-        cleanupTimers();
+        clearTimer();
+        cleanupSilenceTimers();
         cleanupAudioResources();
       }
     };
-  }, [isListening]);
+  }, [isListening, stopRecording, clearTimer, cleanupSilenceTimers, cleanupAudioResources]);
 
   return {
     isListening,

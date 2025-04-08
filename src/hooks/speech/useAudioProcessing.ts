@@ -1,23 +1,21 @@
 
-import { useState, useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 
 interface UseAudioProcessingProps {
   isListening: boolean;
-  onSilenceDetected: () => void;
-  silenceDetectionTime?: number; // Time in ms to trigger silence detection
+  onAudioLevelChange: (level: number) => void;
+  silenceDetectionTime?: number;
 }
 
 export const useAudioProcessing = ({
   isListening,
-  onSilenceDetected,
+  onAudioLevelChange,
   silenceDetectionTime = 2000
 }: UseAudioProcessingProps) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const silenceTimerRef = useRef<number | null>(null);
   const lastAudioLevelRef = useRef<number>(0);
-  const silenceStartTimeRef = useRef<number | null>(null);
 
   // Clean up audio resources
   const cleanupAudioResources = () => {
@@ -40,14 +38,6 @@ export const useAudioProcessing = ({
       audioContextRef.current.close();
       audioContextRef.current = null;
     }
-    
-    if (silenceTimerRef.current) {
-      console.log("AudioProcessing: Clearing silence timer");
-      clearTimeout(silenceTimerRef.current);
-      silenceTimerRef.current = null;
-    }
-    
-    silenceStartTimeRef.current = null;
   };
 
   // Set up silence detection
@@ -79,9 +69,6 @@ export const useAudioProcessing = ({
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
       console.log(`AudioProcessing: Created data array with size: ${dataArray.length}`);
       
-      // Initialize silence start time
-      silenceStartTimeRef.current = null;
-      
       // Function to check audio levels
       const checkAudioLevel = () => {
         if (!isListening || !analyserRef.current) return;
@@ -91,30 +78,8 @@ export const useAudioProcessing = ({
         // Calculate average audio level
         const average = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
         
-        const now = Date.now();
-        
-        // Detect silence (low audio level)
-        if (average < 10) { // Threshold for silence
-          if (silenceStartTimeRef.current === null) {
-            // Mark the start of silence
-            silenceStartTimeRef.current = now;
-            console.log("AudioProcessing: Silence started");
-          } else {
-            // Check if silence duration exceeds the threshold
-            const silenceDuration = now - silenceStartTimeRef.current;
-            if (silenceDuration >= silenceDetectionTime) {
-              console.log(`AudioProcessing: Silence detected for ${silenceDuration}ms, triggering callback`);
-              onSilenceDetected();
-              return; // Stop monitoring after triggering
-            }
-          }
-        } else {
-          // Reset silence timer if sound detected
-          if (silenceStartTimeRef.current !== null) {
-            console.log("AudioProcessing: Sound detected, resetting silence timer");
-            silenceStartTimeRef.current = null;
-          }
-        }
+        // Send audio level to callback
+        onAudioLevelChange(average);
         
         lastAudioLevelRef.current = average;
         
