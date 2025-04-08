@@ -7,7 +7,7 @@ import { ChatMessage } from "@/services/interviewChatService";
 
 interface UseVoiceControlProps {
   chatHistory: ChatMessage[];
-  onMessageReady?: (text: string) => void;
+  onMessageReady?: (text: string) => void; // Add this property to fix the error
   initialMessage?: string;
 }
 

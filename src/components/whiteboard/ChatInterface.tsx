@@ -42,8 +42,14 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     toggleSpeaking
   } = useVoiceControl({
     chatHistory,
-    // Remove the sendMessage prop since it's not in UseVoiceControlProps
-    initialMessage: activeChallenge?.description
+    // We were incorrectly passing sendMessage here, but it's not in UseVoiceControlProps
+    // Removing the sendMessage prop
+    initialMessage: activeChallenge?.description,
+    onMessageReady: (text) => {
+      if (text.trim()) {
+        sendMessage(text);
+      }
+    }
   });
 
   // Use external voice mode state if provided, otherwise use internal state

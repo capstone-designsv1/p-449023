@@ -57,7 +57,11 @@ export const useSpeechToText = ({
     cleanupAudioResources 
   } = useAudioProcessing({
     isListening,
-    onSilenceDetected: stopListening,
+    onSilenceDetected: () => {
+      if (isListening) {
+        stopListening();
+      }
+    },
     silenceDetectionTime
   });
 
@@ -86,7 +90,13 @@ export const useSpeechToText = ({
       // Set up max recording time
       timerRef.current = window.setTimeout(() => {
         console.log("Max recording time reached, stopping");
-        stopListening();
+        if (isListening) {
+          stopRecording();
+          cleanupTimers();
+          cleanupAudioResources();
+          setIsListening(false);
+          toast.info("Processing your speech...", { duration: 1500 });
+        }
       }, maxRecordingTime);
       
       toast.info("Listening... Speak now", { duration: 3000 });
@@ -111,12 +121,12 @@ export const useSpeechToText = ({
   useEffect(() => {
     return () => {
       if (isListening) {
-        stopListening();
+        stopRecording();
+        cleanupTimers();
+        cleanupAudioResources();
       }
-      cleanupTimers();
-      cleanupAudioResources();
     };
-  }, []);
+  }, [isListening]);
 
   return {
     isListening,
