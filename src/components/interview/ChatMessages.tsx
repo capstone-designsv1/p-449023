@@ -11,9 +11,16 @@ interface ChatMessage {
 interface ChatMessagesProps {
   messages: ChatMessage[];
   messagesEndRef: React.RefObject<HTMLDivElement>;
+  isSpeaking?: boolean;
+  toggleSpeaking?: () => void;
 }
 
-const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, messagesEndRef }) => {
+const ChatMessages: React.FC<ChatMessagesProps> = ({ 
+  messages, 
+  messagesEndRef,
+  isSpeaking,
+  toggleSpeaking 
+}) => {
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4 mb-4">
       {messages.map((message) => (
@@ -32,13 +39,27 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({ messages, messagesEndRef })
           >
             <p className="whitespace-pre-line">{message.content}</p>
             <div
-              className={`text-xs mt-2 ${
+              className={`flex items-center justify-between mt-2 ${
                 message.role === "assistant"
                   ? "text-gray-500"
                   : "text-gray-700"
               }`}
             >
-              {message.timestamp.toLocaleTimeString()}
+              <div className="text-xs">
+                {message.timestamp.toLocaleTimeString()}
+              </div>
+              
+              {/* Play Response button for assistant messages */}
+              {message.role === "assistant" && toggleSpeaking && (
+                <button
+                  onClick={toggleSpeaking}
+                  className={`text-xs flex items-center gap-1 ${
+                    isSpeaking ? "text-blue-600" : "text-gray-500 hover:text-gray-700"
+                  }`}
+                >
+                  {isSpeaking ? "Stop" : "Play Response"}
+                </button>
+              )}
             </div>
           </div>
         </div>
