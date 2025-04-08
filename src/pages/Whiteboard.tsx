@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from "react";
-import { useChallengeContext } from "@/context/ChallengeContext";
+import { useChallengeContext, ChallengeProvider } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
 import { Skeleton } from "@/components/ui/skeleton";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
