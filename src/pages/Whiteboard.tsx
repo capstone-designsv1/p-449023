@@ -32,10 +32,10 @@ const WhiteboardContent: React.FC = () => {
   }, [activeChallenge]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white" style={{ fontFamily: "Inter, sans-serif" }}>
+    <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
       {/* Header */}
       {isLoading ? (
-        <div className="bg-white border-b border-gray-200 p-6">
+        <div className="bg-white border-b border-gray-200 p-4">
           <div className="container mx-auto">
             <Skeleton className="h-8 w-64 mb-2" />
             <Skeleton className="h-4 w-40" />
@@ -53,7 +53,7 @@ const WhiteboardContent: React.FC = () => {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         {isLoading ? (
-          <div className="w-1/2 border-r border-gray-200 bg-white p-6">
+          <div className="w-96 border-r border-gray-200 bg-white p-4">
             <Skeleton className="h-6 w-40 mb-2" />
             <Skeleton className="h-32 w-full mb-4" />
             <Skeleton className="h-6 w-40 mb-2" />

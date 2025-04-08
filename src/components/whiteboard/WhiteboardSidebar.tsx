@@ -34,25 +34,26 @@ const WhiteboardSidebar: React.FC<WhiteboardSidebarProps> = ({
   isEvaluating,
 }) => {
   return (
-    <div className="w-1/2 border-r border-gray-200 bg-white flex flex-col h-[calc(100vh-72px)] overflow-hidden">
+    <div className="w-96 border-r border-gray-200 bg-white p-4 flex flex-col h-[calc(100vh-70px)] overflow-y-auto">
       {/* Challenge Brief Section */}
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-lg font-bold mb-3">Challenge Brief</h2>
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-2">Challenge Brief</h2>
         <p className="text-gray-700">{description}</p>
       </div>
       
-      {/* Interview Partner Section */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="px-6 py-4">
-          <h2 className="text-lg font-bold">Interview Partner</h2>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <ChatInterface
-            onSubmitForEvaluation={onSubmitForEvaluation}
-            isEvaluating={isEvaluating}
-          />
-        </div>
+      {/* Interview Partner Section - Removed "Final Answer" title */}
+      <div className="mb-4">
+        <ChatInterface
+          onSubmitForEvaluation={onSubmitForEvaluation}
+          isEvaluating={isEvaluating}
+        />
       </div>
+      
+      {/* Sticky Notes Section */}
+      <StickyNoteInput
+        notes={notes}
+        setNotes={setNotes}
+      />
     </div>
   );
 };

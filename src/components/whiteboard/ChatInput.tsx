@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Send, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -18,7 +18,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage, 
   isSending,
   inputText,
-  setInputText
+  setInputText,
+  isVoiceMode,
+  toggleVoiceMode
 }) => {
   const [newMessage, setNewMessage] = useState("");
   
@@ -46,12 +48,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="flex items-end gap-2 px-6 py-4 border-t border-gray-200">
+    <div className="flex gap-2">
       <Textarea
         value={newMessage}
         onChange={handleChange}
-        placeholder="Type message..."
-        className="min-h-[48px] max-h-24 resize-none flex-1 rounded-xl border-gray-300 focus:border-green-500 focus:ring focus:ring-green-200"
+        placeholder="Type your message..."
+        className="min-h-[60px] resize-none flex-1"
         disabled={isSending}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -60,14 +62,30 @@ const ChatInput: React.FC<ChatInputProps> = ({
           }
         }}
       />
-      <Button
-        onClick={handleSend}
-        size="icon"
-        disabled={isSending || !newMessage.trim()}
-        className="bg-green-500 hover:bg-green-600 text-white rounded-full h-12 w-12 flex items-center justify-center"
-      >
-        <Send className="h-5 w-5" />
-      </Button>
+      <div className="flex flex-col gap-2 self-end">
+        {toggleVoiceMode && (
+          <Button
+            onClick={toggleVoiceMode}
+            size="icon"
+            variant="outline"
+            className={cn(
+              "transition-colors",
+              isVoiceMode && "bg-green-100 text-green-700 border-green-300"
+            )}
+            title={isVoiceMode ? "Disable voice mode" : "Enable voice mode"}
+          >
+            <Mic className="h-4 w-4" />
+          </Button>
+        )}
+        <Button
+          onClick={handleSend}
+          size="icon"
+          disabled={isSending || !newMessage.trim()}
+          className="bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

@@ -5,6 +5,7 @@ import ChatMessageList from "./ChatMessageList";
 import ChatInput from "./ChatInput";
 import SubmitEvaluationButton from "./SubmitEvaluationButton";
 import { useChatLogic } from "@/hooks/useChatLogic";
+import VoiceControls from "./VoiceControls";
 import { useVoiceControl } from "@/hooks/useVoiceControl";
 
 interface ChatMessage {
@@ -28,18 +29,38 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
   
   const {
     isVoiceMode,
+    isListening,
+    isSpeaking,
     inputText,
     setInputText,
-    toggleVoiceMode
+    toggleVoiceMode,
+    toggleListening,
+    toggleSpeaking
   } = useVoiceControl({
     chatHistory,
     sendMessage
   });
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex-1 flex flex-col mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-semibold">Interview Partner</h2>
+      </div>
+      
       {/* Chat Messages */}
       <ChatMessageList messages={chatHistory} />
+      
+      {/* Voice Controls (when voice mode is enabled) */}
+      {isVoiceMode && (
+        <VoiceControls
+          isListening={isListening}
+          isSpeaking={isSpeaking}
+          isSending={isSending}
+          toggleListening={toggleListening}
+          toggleSpeaking={toggleSpeaking}
+          hasChatHistory={chatHistory.length > 0}
+        />
+      )}
       
       {/* Message Input */}
       <ChatInput 
@@ -52,13 +73,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
       />
       
       {/* Submit for Evaluation Button */}
-      <div className="px-6 pb-4">
-        <SubmitEvaluationButton 
-          chatHistory={chatHistory}
-          onSubmit={onSubmitForEvaluation}
-          isEvaluating={isEvaluating}
-        />
-      </div>
+      <SubmitEvaluationButton 
+        chatHistory={chatHistory}
+        onSubmit={onSubmitForEvaluation}
+        isEvaluating={isEvaluating}
+      />
     </div>
   );
 };

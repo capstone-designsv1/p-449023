@@ -33,7 +33,7 @@ const SubmitEvaluationButton: React.FC<SubmitEvaluationButtonProps> = ({
   return (
     <Button 
       onClick={handleSubmit}
-      className="w-full bg-green-500 hover:bg-green-600 text-white rounded-xl py-3"
+      className="w-full mt-3 bg-[rgba(97,228,197,1)] text-black border border-black hover:bg-[rgba(77,208,177,1)]"
       disabled={isEvaluating || chatHistory.length <= 1}
     >
       {isEvaluating ? "Evaluating..." : "Submit for Evaluation"}
