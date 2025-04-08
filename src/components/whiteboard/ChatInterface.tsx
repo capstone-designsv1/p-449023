@@ -1,4 +1,3 @@
-
 import React from "react";
 import { useChallengeContext } from "@/context/ChallengeContext";
 import ChatMessageList from "./ChatMessageList";
@@ -42,8 +41,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
     toggleSpeaking
   } = useVoiceControl({
     chatHistory,
-    // We were incorrectly passing sendMessage here, but it's not in UseVoiceControlProps
-    // Removing the sendMessage prop
     initialMessage: activeChallenge?.description,
     onMessageReady: (text) => {
       if (text.trim()) {
