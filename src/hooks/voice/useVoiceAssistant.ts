@@ -135,6 +135,12 @@ export const useVoiceAssistant = ({
     }
   }, [isSpeaking, stopSpeaking, speakText, chatHistory]);
 
+  // Toggle auto-speak feature
+  const toggleAutoSpeak = useCallback(() => {
+    autoSpeakEnabledRef.current = !autoSpeakEnabledRef.current;
+    toast.info(`Auto-speak ${autoSpeakEnabledRef.current ? 'enabled' : 'disabled'}`);
+  }, []);
+
   return {
     isVoiceMode,
     isListening,
