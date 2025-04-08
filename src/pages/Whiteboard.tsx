@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -26,8 +25,9 @@ const WhiteboardContent: React.FC = () => {
     arrows, updateArrow, addArrow, deleteArrow
   } = useWhiteboard();
 
-  // Voice control for the entire whiteboard
-  const { isVoiceMode, toggleVoiceMode, sendMessage } = useVoiceControl({
+  // Voice control for the entire whiteboard - fixed by removing sendMessage 
+  // since it's now optional in the hook
+  const { isVoiceMode, toggleVoiceMode } = useVoiceControl({
     chatHistory
   });
 
