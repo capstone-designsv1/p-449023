@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Mic } from "lucide-react";
+import { Send, Mic, MicOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -23,6 +24,25 @@ const ChatInput: React.FC<ChatInputProps> = ({
   toggleVoiceMode
 }) => {
   const [newMessage, setNewMessage] = useState("");
+  
+  // Initialize speech-to-text functionality
+  const { isListening, startListening, stopListening } = useSpeechToText({
+    onTranscriptReady: (text) => {
+      setNewMessage(prev => prev + " " + text);
+      if (setInputText) {
+        setInputText(prev => prev + " " + text);
+      }
+    }
+  });
+  
+  // Toggle listening functionality
+  const toggleListening = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
   
   // Sync internal state with external inputText if provided
   useEffect(() => {
@@ -77,6 +97,22 @@ const ChatInput: React.FC<ChatInputProps> = ({
             <Mic className="h-4 w-4" />
           </Button>
         )}
+        
+        {/* New microphone toggle button */}
+        <Button
+          onClick={toggleListening}
+          size="icon"
+          variant="outline"
+          className={cn(
+            "transition-colors",
+            isListening && "bg-red-100 text-red-700 border-red-300"
+          )}
+          title={isListening ? "Stop listening" : "Start listening"}
+          disabled={isSending}
+        >
+          {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+        </Button>
+        
         <Button
           onClick={handleSend}
           size="icon"
