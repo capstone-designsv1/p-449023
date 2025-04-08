@@ -17,7 +17,7 @@ export const useAudioEvents = ({
   onPlaybackEnd,
 }: UseAudioEventsProps) => {
   // Event handler for normal audio playback end
-  const handleAudioEnded = useCallback(() => {
+  const handleAudioEnded = useCallback((e: Event) => {
     console.log("Audio playback ended normally");
     cleanupAudioResources();
     setIsPlaying(false);
