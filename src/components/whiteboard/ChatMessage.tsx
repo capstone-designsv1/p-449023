@@ -90,45 +90,33 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ id, role, content, timestamp 
   
   return (
     <div 
-      className={`flex items-start gap-3 mb-4 ${
-        role === "assistant" ? "" : "flex-row-reverse"
+      className={`flex items-start gap-3 mb-4 px-6 ${
+        role === "user" ? "flex-row-reverse" : ""
       }`}
     >
       {/* Avatar */}
-      <Avatar className={`h-8 w-8 ${role === "assistant" ? "bg-primary/10" : "bg-black"}`}>
-        {role === "assistant" ? (
-          <>
-            <AvatarFallback>AI</AvatarFallback>
-            <AvatarImage src="/ai-avatar.png" alt="AI Assistant" />
-          </>
-        ) : (
-          <>
-            <AvatarFallback>U</AvatarFallback>
-            <AvatarImage src="/user-avatar.png" alt="User" />
-          </>
-        )}
+      <Avatar className={`h-8 w-8 ${role === "assistant" ? "bg-green-100" : "bg-purple-100"}`}>
+        <AvatarFallback className={role === "assistant" ? "text-green-500" : "text-purple-500"}>
+          {role === "assistant" ? "AI" : "A"}
+        </AvatarFallback>
       </Avatar>
       
       {/* Message content */}
-      <div className="flex-1">
+      <div className="max-w-[85%]">
         {chunks.slice(0, visibleChunks).map((chunk, idx) => (
           <div
             key={`${id}-chunk-${idx}`}
-            className={`px-4 py-2 rounded-lg mb-2 ${
+            className={`px-4 py-3 rounded-2xl mb-2 ${
               role === "assistant"
-                ? "bg-muted"
-                : "bg-primary text-primary-foreground"
+                ? "bg-green-100 text-gray-800"
+                : "bg-purple-100 text-gray-800"
             }`}
           >
             <div className="prose prose-sm">
               {formatMessage(chunk)}
             </div>
             {idx === visibleChunks - 1 && (
-              <div
-                className={`text-xs mt-1 ${
-                  role === "assistant" ? "text-gray-500" : "text-primary-foreground/80"
-                }`}
-              >
+              <div className="text-xs mt-1 text-gray-500">
                 {timeAgo}
               </div>
             )}

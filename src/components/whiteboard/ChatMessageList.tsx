@@ -26,9 +26,9 @@ const ChatMessageList: React.FC<ChatMessageListProps> = ({ messages }) => {
   };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gray-50 rounded-md p-3 mb-3 min-h-[200px] max-h-[300px]">
+    <div className="flex-1 overflow-y-auto py-4">
       {messages.length === 0 ? (
-        <div className="text-gray-400 text-center py-4">
+        <div className="text-gray-400 text-center py-8">
           Starting interview conversation...
         </div>
       ) : (

@@ -1,10 +1,13 @@
 
 import React, { useRef, useState } from "react";
 import WhiteboardCanvas from "@/components/whiteboard/WhiteboardCanvas";
-import Toolbar from "@/components/whiteboard/Toolbar";
+import CanvasToolbar from "@/components/whiteboard/CanvasToolbar";
+import FloatingMicButton from "@/components/whiteboard/FloatingMicButton";
 import StickyNote from "@/components/whiteboard/StickyNote";
 import Shape from "@/components/whiteboard/Shape";
 import Arrow from "@/components/whiteboard/Arrow";
+import { useVoiceControl } from "@/hooks/useVoiceControl";
+import { useChallengeContext } from "@/context/ChallengeContext";
 
 interface StickyNoteType {
   id: string;
@@ -31,8 +34,8 @@ interface ArrowType {
 }
 
 interface WhiteboardAreaProps {
-  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
-  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square") => void;
+  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note" | "line";
+  setActiveTool: (tool: any) => void;
   notes: StickyNoteType[];
   updateNotePosition: (id: string, position: { x: number; y: number }) => void;
   updateNoteText: (id: string, text: string) => void;
@@ -67,6 +70,12 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   const [isDrawingArrow, setIsDrawingArrow] = useState(false);
   const [arrowStart, setArrowStart] = useState({ x: 0, y: 0 });
   const [arrowEnd, setArrowEnd] = useState({ x: 0, y: 0 });
+  const { chatHistory } = useChallengeContext();
+  
+  const { isVoiceMode, isListening, toggleListening } = useVoiceControl({
+    chatHistory,
+    onMessageReady: () => {}
+  });
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (activeTool === "arrow" && containerRef.current) {
@@ -99,14 +108,13 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
 
   return (
     <div 
-      className="flex-1 relative overflow-hidden" 
+      className="flex-1 relative overflow-hidden bg-gray-50"
       ref={containerRef}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
-      <Toolbar activeTool={activeTool} setActiveTool={setActiveTool} />
       <WhiteboardCanvas activeTool={activeTool} onCanvasRef={onCanvasRef} />
       
       {/* Render arrows */}
@@ -176,6 +184,19 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
           deleteNote={deleteNote}
         />
       ))}
+      
+      {/* Bottom toolbar */}
+      <CanvasToolbar 
+        activeTool={activeTool} 
+        setActiveTool={setActiveTool} 
+      />
+      
+      {/* Floating mic button */}
+      <FloatingMicButton 
+        isListening={isListening} 
+        toggleListening={toggleListening}
+        isVoiceMode={isVoiceMode}
+      />
     </div>
   );
 };
