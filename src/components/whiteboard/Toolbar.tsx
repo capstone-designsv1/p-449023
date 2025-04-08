@@ -1,11 +1,11 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Eraser, MousePointer, Type, ArrowRight, Circle, Square } from "lucide-react";
+import { Eraser, MousePointer, Type, ArrowRight, Circle, Square, StickyNote } from "lucide-react";
 
 interface ToolbarProps {
-  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
-  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square") => void;
+  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note";
+  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note") => void;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool }) => {
@@ -59,6 +59,16 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, setActiveTool }) => {
         title="Square"
       >
         <Square size={20} />
+      </Button>
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        className={`rounded-md ${activeTool === "note" ? "bg-gray-200" : ""}`}
+        onClick={() => setActiveTool("note")}
+        title="Sticky Note"
+      >
+        <StickyNote size={20} />
       </Button>
       
       <Button

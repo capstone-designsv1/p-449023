@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -18,7 +19,7 @@ const WhiteboardContent: React.FC = () => {
   
   const {
     activeTool, setActiveTool,
-    updateNotePosition, updateNoteText, deleteNote,
+    updateNotePosition, updateNoteText, deleteNote, addNote,
     handleBackToList, handleSubmitForEvaluation,
     handleCanvasRef, handleCloseResults, initializeChallenge,
     shapes, updateShapePosition, deleteShape,
@@ -85,6 +86,7 @@ const WhiteboardContent: React.FC = () => {
           updateNotePosition={updateNotePosition}
           updateNoteText={updateNoteText}
           deleteNote={deleteNote}
+          addNote={addNote}
           onCanvasRef={handleCanvasRef}
           shapes={shapes}
           updateShapePosition={updateShapePosition}

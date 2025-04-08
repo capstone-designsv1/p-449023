@@ -6,6 +6,7 @@ import StickyNote from "@/components/whiteboard/StickyNote";
 import Shape from "@/components/whiteboard/Shape";
 import Arrow from "@/components/whiteboard/Arrow";
 import FloatingMicButton from "@/components/whiteboard/FloatingMicButton";
+import { toast } from "sonner";
 
 interface StickyNoteType {
   id: string;
@@ -32,8 +33,8 @@ interface ArrowType {
 }
 
 interface WhiteboardAreaProps {
-  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square";
-  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square") => void;
+  activeTool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note";
+  setActiveTool: (tool: "eraser" | "select" | "text" | "arrow" | "circle" | "square" | "note") => void;
   notes: StickyNoteType[];
   updateNotePosition: (id: string, position: { x: number; y: number }) => void;
   updateNoteText: (id: string, text: string) => void;
@@ -48,6 +49,7 @@ interface WhiteboardAreaProps {
   deleteArrow?: (id: string) => void;
   isVoiceMode?: boolean;
   toggleVoiceMode?: () => void;
+  addNote?: (position: { x: number; y: number }) => void;
 }
 
 const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
@@ -67,6 +69,7 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   deleteArrow = () => {},
   isVoiceMode,
   toggleVoiceMode,
+  addNote = () => {},
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isDrawingArrow, setIsDrawingArrow] = useState(false);
@@ -74,14 +77,20 @@ const WhiteboardArea: React.FC<WhiteboardAreaProps> = ({
   const [arrowEnd, setArrowEnd] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (activeTool === "arrow" && containerRef.current) {
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      
+    if (!containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    if (activeTool === "arrow") {
       setArrowStart({ x, y });
       setArrowEnd({ x, y });
       setIsDrawingArrow(true);
+    } else if (activeTool === "note") {
+      addNote({ x, y });
+      toast.success("Sticky note added");
+      setActiveTool("select"); // Switch back to select tool after placing a note
     }
   };
 

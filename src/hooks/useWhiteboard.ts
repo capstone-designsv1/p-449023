@@ -12,7 +12,7 @@ import { useChallengeContext } from "@/context/ChallengeContext";
 export const useWhiteboard = () => {
   const { activeChallenge } = useChallengeContext();
   const { activeTool, setActiveTool } = useWhiteboardTools();
-  const { notes, updateNotePosition, updateNoteText, deleteNote } = useNotes();
+  const { notes, updateNotePosition, updateNoteText, deleteNote, addNote } = useNotes();
   const { shapes, updateShapePosition, deleteShape } = useShapes();
   const { arrows, addArrow, updateArrow, deleteArrow } = useArrows();
   const { handleCanvasRef, getCanvasData } = useCanvas();
@@ -37,6 +37,7 @@ export const useWhiteboard = () => {
     updateNotePosition,
     updateNoteText,
     deleteNote,
+    addNote,
     handleBackToList,
     handleSubmitForEvaluation: (data: any) => handleSubmitForEvaluation(data, getCanvasData),
     handleCanvasRef,

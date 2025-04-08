@@ -25,6 +25,7 @@ const StickyNote: React.FC<StickyNoteProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(text);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [showConnectors, setShowConnectors] = useState(false);
   const noteRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -33,6 +34,10 @@ const StickyNote: React.FC<StickyNoteProps> = ({
       textareaRef.current.focus();
     }
   }, [isEditing]);
+
+  useEffect(() => {
+    setEditText(text);
+  }, [text]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isEditing) return;
@@ -87,6 +92,15 @@ const StickyNote: React.FC<StickyNoteProps> = ({
     };
   }, [isDragging]);
 
+  // Calculate connector positions
+  const connectorSize = 8;
+  const connectorPositions = [
+    { top: "50%", left: -connectorSize / 2, transform: "translateY(-50%)" }, // Left
+    { top: "50%", right: -connectorSize / 2, transform: "translateY(-50%)" }, // Right
+    { top: -connectorSize / 2, left: "50%", transform: "translateX(-50%)" }, // Top
+    { bottom: -connectorSize / 2, left: "50%", transform: "translateX(-50%)" }  // Bottom
+  ];
+
   return (
     <div
       ref={noteRef}
@@ -99,6 +113,8 @@ const StickyNote: React.FC<StickyNoteProps> = ({
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
+      onMouseEnter={() => setShowConnectors(true)}
+      onMouseLeave={() => setShowConnectors(false)}
     >
       <button
         className="absolute top-1 right-1 p-1 rounded-full hover:bg-gray-200 text-gray-600"
@@ -123,6 +139,20 @@ const StickyNote: React.FC<StickyNoteProps> = ({
       ) : (
         <div className="p-3 pt-4 whitespace-pre-wrap">{text}</div>
       )}
+
+      {/* Connection points */}
+      {showConnectors && connectorPositions.map((pos, index) => (
+        <div
+          key={index}
+          className="absolute bg-blue-500 rounded-full border-2 border-white z-20"
+          style={{
+            width: `${connectorSize}px`,
+            height: `${connectorSize}px`,
+            ...pos,
+            cursor: "crosshair",
+          }}
+        />
+      ))}
     </div>
   );
 };
