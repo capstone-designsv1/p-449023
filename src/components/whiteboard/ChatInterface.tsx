@@ -60,7 +60,6 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
         inputText={inputText}
         setInputText={setInputText}
         isVoiceMode={isVoiceMode}
-        toggleVoiceMode={toggleVoiceMode}
         isListening={isListening}
         toggleListening={toggleListening}
       />
