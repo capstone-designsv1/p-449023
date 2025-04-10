@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useChallengeContext } from "@/context/ChallengeContext";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle2, AlertCircle, ArrowRightCircle, Lightbulb } from "lucide-react";
+import { CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 
 interface EvaluationResultsProps {
   isOpen: boolean;
@@ -36,6 +36,60 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
     navigate("/challenges");
   };
 
+  // Create prioritized improvements list - combining the main weakness and top improvements
+  const createPrioritizedImprovements = (): string[] => {
+    const priorities: string[] = [];
+    
+    // Add the main weakness first if available
+    if (evaluationWeaknesses?.mainWeakness) {
+      const mainWeakness = typeof evaluationWeaknesses.mainWeakness === 'string' 
+        ? evaluationWeaknesses.mainWeakness 
+        : JSON.stringify(evaluationWeaknesses.mainWeakness);
+      priorities.push(mainWeakness);
+    }
+    
+    // Add other improvements to fill out our list (up to 3 total)
+    if (evaluationImprovements && evaluationImprovements.length > 0) {
+      const remainingSlots = 3 - priorities.length;
+      if (remainingSlots > 0) {
+        evaluationImprovements.slice(0, remainingSlots).forEach(improvement => {
+          const cleanImprovement = typeof improvement === 'string' 
+            ? improvement 
+            : JSON.stringify(improvement);
+          priorities.push(cleanImprovement);
+        });
+      }
+    }
+    
+    return priorities;
+  };
+  
+  // Get 1-2 key strengths
+  const getTopStrengths = (): string[] => {
+    if (!evaluationStrengths || evaluationStrengths.length === 0) return [];
+    
+    return evaluationStrengths.slice(0, 2).map(strength => 
+      typeof strength === 'string' ? strength : JSON.stringify(strength)
+    );
+  };
+  
+  // Get 1-2 next steps - prioritizing dedicated next steps, falling back to actionable tips
+  const getSuggestedNextSteps = (): string[] => {
+    let steps: string[] = [];
+    
+    if (evaluationNextSteps && evaluationNextSteps.length > 0) {
+      steps = evaluationNextSteps.slice(0, 2).map(step => 
+        typeof step === 'string' ? step : JSON.stringify(step)
+      );
+    } else if (evaluationActionable && evaluationActionable.length > 0) {
+      steps = evaluationActionable.slice(0, 2).map(action => 
+        typeof action === 'string' ? action : JSON.stringify(action)
+      );
+    }
+    
+    return steps;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -60,102 +114,59 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
               </div>
             </div>
 
-            {/* Feedback */}
+            {/* Overall Assessment */}
             <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold">Overall Assessment</h3>
               <p className="text-gray-700 whitespace-pre-line">{feedback}</p>
             </div>
-
-            {/* Strengths */}
-            {evaluationStrengths && evaluationStrengths.length > 0 && (
-              <div className="space-y-2 border-l-4 border-green-400 pl-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  <h3 className="text-lg font-semibold">Key Strengths</h3>
-                </div>
-                <ul className="space-y-3">
-                  {evaluationStrengths.map((strength, index) => (
-                    <li key={index} className="text-gray-700">
-                      {typeof strength === 'string' ? strength : JSON.stringify(strength)}
-                    </li>
-                  ))}
-                </ul>
+            
+            {/* Top Priorities to Improve */}
+            <div className="rounded-lg bg-amber-50 p-4 border border-amber-200">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+                <h3 className="text-lg font-semibold text-amber-800">Top Priorities to Improve</h3>
               </div>
-            )}
-
-            {/* Primary Weakness with Steps */}
-            {evaluationWeaknesses && (
-              <div className="space-y-2 border-l-4 border-amber-400 pl-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="h-5 w-5 text-amber-500" />
-                  <h3 className="text-lg font-semibold">Primary Area to Focus On</h3>
-                </div>
-                <p className="font-medium">
-                  {typeof evaluationWeaknesses.mainWeakness === 'string' 
-                    ? evaluationWeaknesses.mainWeakness 
-                    : JSON.stringify(evaluationWeaknesses.mainWeakness)}
-                </p>
-                <div className="mt-2">
-                  <p className="text-sm font-medium text-gray-600 mb-1">How to improve:</p>
-                  <ol className="list-decimal ml-5 space-y-1">
-                    {evaluationWeaknesses.improvementSteps.map((step, index) => (
-                      <li key={index} className="text-gray-700">
-                        {typeof step === 'string' ? step : JSON.stringify(step)}
-                      </li>
-                    ))}
-                  </ol>
-                </div>
+              <ul className="space-y-2">
+                {createPrioritizedImprovements().map((priority, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="font-medium text-amber-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
+                    <p className="text-amber-900">{priority}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* What You Did Well */}
+            <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+              <div className="flex items-center gap-2 mb-3">
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+                <h3 className="text-lg font-semibold text-green-800">What You Did Well</h3>
               </div>
-            )}
-
-            {/* Areas for Improvement */}
-            {evaluationImprovements && evaluationImprovements.length > 0 && (
-              <div className="space-y-2">
-                <h3 className="text-lg font-semibold">Other Areas for Improvement</h3>
-                <ul className="list-disc pl-5 space-y-3">
-                  {evaluationImprovements.map((improvement, index) => (
-                    <li key={index} className="text-gray-700">
-                      {typeof improvement === 'string' ? improvement : JSON.stringify(improvement)}
-                    </li>
-                  ))}
-                </ul>
+              <ul className="space-y-2">
+                {getTopStrengths().map((strength, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="font-medium text-green-700 mt-0.5 min-w-[20px]">•</span>
+                    <p className="text-green-900">{strength}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            
+            {/* Suggested Next Steps */}
+            <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
+              <div className="flex items-center gap-2 mb-3">
+                <ArrowRight className="h-5 w-5 text-blue-500" />
+                <h3 className="text-lg font-semibold text-blue-800">Suggested Next Steps</h3>
               </div>
-            )}
-
-            {/* Next Steps Section */}
-            {evaluationNextSteps && evaluationNextSteps.length > 0 && (
-              <div className="space-y-2 border-l-4 border-blue-400 pl-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <ArrowRightCircle className="h-5 w-5 text-blue-500" />
-                  <h3 className="text-lg font-semibold">Next Steps</h3>
-                </div>
-                <ul className="space-y-3">
-                  {evaluationNextSteps.map((step, index) => (
-                    <li key={index} className="text-gray-700 flex items-start gap-2">
-                      <span className="font-medium text-blue-700 mt-0.5">#{index + 1}:</span>
-                      <p>{typeof step === 'string' ? step : JSON.stringify(step)}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Actionable Tips */}
-            {evaluationActionable && evaluationActionable.length > 0 && (
-              <div className="space-y-2 border-l-4 border-purple-400 pl-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Lightbulb className="h-5 w-5 text-purple-500" />
-                  <h3 className="text-lg font-semibold">Actionable Tips</h3>
-                </div>
-                <ul className="space-y-2">
-                  {evaluationActionable.map((action, index) => (
-                    <li key={index} className="text-gray-700">
-                      {typeof action === 'string' ? action : JSON.stringify(action)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              <ul className="space-y-2">
+                {getSuggestedNextSteps().map((step, index) => (
+                  <li key={index} className="flex items-start gap-2">
+                    <span className="font-medium text-blue-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
+                    <p className="text-blue-900">{step}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             <Separator />
 

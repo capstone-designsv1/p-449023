@@ -2,16 +2,18 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 
-export interface InterviewFeedback {
+export interface FormattedFeedback {
   score: number;
-  feedback: string;
+  overview: string;
+  topPriorities: string[];
   strengths: string[];
-  improvements: string[];
+  nextSteps: string[];
 }
 
 interface FeedbackDisplayProps {
-  feedback: InterviewFeedback;
+  feedback: FormattedFeedback;
   handleBackToChat: () => void;
   handleBackToList: () => void;
 }
@@ -31,36 +33,65 @@ const FeedbackDisplay: React.FC<FeedbackDisplayProps> = ({
         <p className="mt-2 text-sm text-muted-foreground">Score out of 100</p>
       </div>
       
-      <Accordion type="single" collapsible className="w-full">
-        <AccordionItem value="overview">
-          <AccordionTrigger className="text-lg font-semibold">Overview</AccordionTrigger>
-          <AccordionContent className="text-base whitespace-pre-line">
-            {feedback.feedback}
-          </AccordionContent>
-        </AccordionItem>
+      <div className="space-y-6">
+        {/* Overview */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="overview" className="border-b-0">
+            <AccordionTrigger className="text-lg font-semibold py-4">Overview</AccordionTrigger>
+            <AccordionContent className="text-base">
+              <p className="whitespace-pre-line">{feedback.overview}</p>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         
-        <AccordionItem value="strengths">
-          <AccordionTrigger className="text-lg font-semibold">Strengths</AccordionTrigger>
-          <AccordionContent>
-            <ul className="list-disc pl-5 space-y-1">
-              {feedback.strengths.map((strength, index) => (
-                <li key={index}>{strength}</li>
-              ))}
-            </ul>
-          </AccordionContent>
-        </AccordionItem>
+        {/* Top Priorities to Improve */}
+        <div className="rounded-lg bg-amber-50 p-4 border border-amber-200">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
+            <h3 className="text-lg font-semibold text-amber-800">Top Priorities to Improve</h3>
+          </div>
+          <ul className="space-y-2">
+            {feedback.topPriorities.map((priority, index) => (
+              <li key={index} className="flex items-start gap-2">
+                <span className="font-medium text-amber-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
+                <p className="text-amber-900">{priority}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
         
-        <AccordionItem value="improvements">
-          <AccordionTrigger className="text-lg font-semibold">Areas for Improvement</AccordionTrigger>
-          <AccordionContent>
-            <ul className="list-disc pl-5 space-y-1">
-              {feedback.improvements.map((improvement, index) => (
-                <li key={index}>{improvement}</li>
-              ))}
-            </ul>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
+        {/* What You Did Well */}
+        <div className="rounded-lg bg-green-50 p-4 border border-green-200">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <h3 className="text-lg font-semibold text-green-800">What You Did Well</h3>
+          </div>
+          <ul className="space-y-2">
+            {feedback.strengths.map((strength, index) => (
+              <li key={index} className="flex items-start gap-2">
+                <span className="font-medium text-green-700 mt-0.5 min-w-[20px]">•</span>
+                <p className="text-green-900">{strength}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        
+        {/* Suggested Next Steps */}
+        <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
+          <div className="flex items-center gap-2 mb-3">
+            <ArrowRight className="h-5 w-5 text-blue-500" />
+            <h3 className="text-lg font-semibold text-blue-800">Suggested Next Steps</h3>
+          </div>
+          <ul className="space-y-2">
+            {feedback.nextSteps.map((step, index) => (
+              <li key={index} className="flex items-start gap-2">
+                <span className="font-medium text-blue-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
+                <p className="text-blue-900">{step}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
       
       <div className="mt-6 flex justify-end space-x-3">
         <Button 

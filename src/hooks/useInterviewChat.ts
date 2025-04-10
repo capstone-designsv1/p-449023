@@ -4,6 +4,7 @@ import { useVoiceMode } from "./useVoiceMode";
 import { ElevenLabsVoice } from "./useTextToSpeech";
 import { 
   ChatMessage, 
+  FormattedFeedback,
   initializeChat, 
   sendMessageToAI, 
   endSession 
@@ -13,7 +14,7 @@ import { toast } from "sonner";
 interface UseInterviewChatProps {
   companyName: string;
   designLevel: "Junior" | "Senior" | "Lead";
-  onSessionEnd: (feedback: string) => void;
+  onSessionEnd: (feedback: FormattedFeedback) => void;
 }
 
 export const useInterviewChat = ({

@@ -2,16 +2,16 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatInterface from "@/components/interview/ChatInterface";
-import { InterviewFeedback } from "./FeedbackDisplay";
+import { FormattedFeedback } from "@/services/interviewChatService";
 import FeedbackDisplay from "./FeedbackDisplay";
 
 interface InterviewTabsProps {
   activeTab: "chat" | "feedback";
   setActiveTab: (tab: "chat" | "feedback") => void;
-  feedback: InterviewFeedback | null;
+  feedback: FormattedFeedback | null;
   companyName: string;
   designLevel: "Junior" | "Senior" | "Lead";
-  handleSessionEnd: (feedbackText: string) => void;
+  handleSessionEnd: (feedback: FormattedFeedback) => void;
   handleBackToList: () => void;
 }
 
