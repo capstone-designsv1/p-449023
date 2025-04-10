@@ -1,7 +1,6 @@
 
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, VolumeX } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface VoiceModeToggleProps {
@@ -16,18 +15,20 @@ const VoiceModeToggle: React.FC<VoiceModeToggleProps> = ({
   return (
     <Button 
       variant="outline" 
-      size="icon"
+      size="sm"
       className={cn(
-        "transition-colors",
-        isVoiceMode && "bg-green-100 text-green-700 border-green-300"
+        "transition-colors hover:bg-[rgba(97,228,197,0.1)]",
+        isVoiceMode 
+          ? "bg-[rgba(97,228,197,0.2)] text-black border-[rgba(97,228,197,0.5)]" 
+          : "border-gray-300"
       )}
       onClick={toggleVoiceMode}
       title={isVoiceMode ? "Disable voice mode" : "Enable voice mode"}
     >
-      {isVoiceMode 
-        ? <Mic className="h-4 w-4" /> 
-        : <VolumeX className="h-4 w-4" />
-      }
+      Voice Mode
+      {isVoiceMode && (
+        <span className="ml-1 h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+      )}
     </Button>
   );
 };
