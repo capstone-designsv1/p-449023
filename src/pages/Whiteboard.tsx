@@ -65,15 +65,6 @@ const WhiteboardContent: React.FC = () => {
     }
   }, [activeChallenge]);
 
-  // Show a notification when the timer is first set
-  useEffect(() => {
-    if (totalMinutes > 0 && !isTimerLoading) {
-      toast.info(`You have ${totalMinutes} minutes to complete this challenge`, {
-        duration: 5000
-      });
-    }
-  }, [totalMinutes, isTimerLoading]);
-
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
       {/* Header */}

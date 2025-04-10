@@ -102,15 +102,6 @@ export function useChallengeTimer({
     };
   }, [timerState.isActive, timerState.secondsRemaining, onTimeExpired]);
 
-  // Show a notification when the timer is first set
-  useEffect(() => {
-    if (timerState.totalMinutes > 0 && !timerState.isLoading) {
-      toast.info(`You have ${timerState.totalMinutes} minutes to complete this challenge`, {
-        duration: 5000
-      });
-    }
-  }, [timerState.totalMinutes, timerState.isLoading]);
-
   // Reset timer function
   const resetTimer = async () => {
     const { totalMinutes, secondsRemaining } = await fetchSuggestedTime(

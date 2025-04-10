@@ -74,7 +74,6 @@ export const sendMessageToAI = async (
     return aiMessage;
   } catch (error) {
     console.error("Error sending message to AI:", error);
-    toast.error("Failed to get a response. Please try again.");
     throw error; // Re-throw to let the caller handle it with retries
   }
 };

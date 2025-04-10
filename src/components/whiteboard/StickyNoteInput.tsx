@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 
 interface StickyNoteType {
   id: string;
@@ -38,12 +37,10 @@ const StickyNoteInput: React.FC<StickyNoteInputProps> = ({ notes, setNotes }) =>
     
     setNotes([...notes, newNote]);
     setNewNoteText("");
-    // Removed toast notification for routine note creation
   };
 
   const deleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
-    // Removed toast notification for routine note deletion
   };
 
   return (

@@ -40,8 +40,6 @@ export function useTimerDuration() {
       
       const totalSeconds = suggestedTimeMinutes * 60;
       
-      toast.success(`Challenge timer set for ${suggestedTimeMinutes} minutes`);
-      
       setIsLoading(false);
       
       return {

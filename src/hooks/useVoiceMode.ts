@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
@@ -25,7 +26,6 @@ export const useVoiceMode = ({ chatHistory, onMessageReady }: UseVoiceModeProps)
   
   const handleSpeechStart = () => {
     console.log("Voice mode: AI speaking started");
-    toast.info("AI is speaking...", { id: "ai-speaking" });
   };
   
   const handleSpeechEnd = () => {
