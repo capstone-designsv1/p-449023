@@ -13,6 +13,7 @@ interface UseVoiceControlProps {
 export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlProps) => {
   const [inputText, setInputText] = useState("");
   const [isVoiceMode, setIsVoiceMode] = useState(false);
+  const lastAssistantMessageRef = useRef<string | null>(null);
   
   // Handle transcribed speech text
   const handleTranscriptReady = (text: string) => {
@@ -45,6 +46,29 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
     onSpeechEnd: () => {}
   });
 
+  // Auto-speak AI responses when in voice mode
+  useEffect(() => {
+    if (isVoiceMode && chatHistory.length > 0) {
+      const lastMessage = chatHistory[chatHistory.length - 1];
+      
+      // Only auto-speak new assistant messages
+      if (lastMessage.role === 'assistant' && lastMessage.content !== lastAssistantMessageRef.current) {
+        console.log("Voice control: New assistant message detected, auto-speaking");
+        lastAssistantMessageRef.current = lastMessage.content;
+        
+        // Set a flag for user interaction if needed
+        document.documentElement.setAttribute('data-user-interacted', 'true');
+        
+        // Immediately try to speak the text
+        speakText(lastMessage.content)
+          .catch(error => {
+            console.error("Failed to auto-speak message:", error);
+            toast.error("Couldn't play audio automatically. Click the headphone button to try again.");
+          });
+      }
+    }
+  }, [chatHistory, isVoiceMode, speakText]);
+
   // Toggle voice mode on/off
   const toggleVoiceMode = () => {
     if (!isVoiceMode) {
@@ -53,6 +77,9 @@ export const useVoiceControl = ({ chatHistory, sendMessage }: UseVoiceControlPro
         .then(() => {
           setIsVoiceMode(true);
           toast.success("Voice mode enabled");
+          
+          // Mark that user has interacted with the page
+          document.documentElement.setAttribute('data-user-interacted', 'true');
         })
         .catch((err) => {
           console.error("Microphone permission denied:", err);
