@@ -11,6 +11,8 @@ export interface ChatMessage {
 
 export const initializeChat = async (companyName: string, designLevel: string): Promise<ChatMessage> => {
   try {
+    console.log(`Initializing chat with company: ${companyName}, level: ${designLevel}`);
+    
     const response = await supabase.functions.invoke('interview-chat', {
       body: {
         action: "start",
@@ -19,7 +21,10 @@ export const initializeChat = async (companyName: string, designLevel: string): 
       }
     });
 
+    console.log("Function response:", response);
+
     if (response.error) {
+      console.error("Error from function:", response.error);
       throw new Error(response.error.message);
     }
 
@@ -53,31 +58,44 @@ export const sendMessageToAI = async (
   companyName: string, 
   designLevel: string
 ): Promise<ChatMessage> => {
-  const response = await supabase.functions.invoke('interview-chat', {
-    body: {
-      action: "chat",
-      message,
-      history: history.map(msg => ({
-        role: msg.role === "assistant" ? "assistant" : "user",
-        content: msg.content
-      })),
-      companyName,
-      designLevel
+  try {
+    console.log(`Sending message to AI with company: ${companyName}, level: ${designLevel}`);
+    console.log(`Message: ${message.substring(0, 50)}...`);
+    console.log(`History length: ${history.length}`);
+    
+    const response = await supabase.functions.invoke('interview-chat', {
+      body: {
+        action: "chat",
+        message,
+        history: history.map(msg => ({
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: msg.content
+        })),
+        companyName,
+        designLevel
+      }
+    });
+
+    console.log("Function response:", response);
+
+    if (response.error) {
+      console.error("Error from function:", response.error);
+      throw new Error(response.error.message);
     }
-  });
 
-  if (response.error) {
-    throw new Error(response.error.message);
+    const aiMessage: ChatMessage = {
+      id: `ai-${Date.now()}`,
+      role: "assistant",
+      content: response.data.message,
+      timestamp: new Date()
+    };
+
+    return aiMessage;
+  } catch (error) {
+    console.error("Error sending message to AI:", error);
+    toast.error("Failed to get a response. Please try again.");
+    throw error; // Re-throw to let the caller handle it with retries
   }
-
-  const aiMessage: ChatMessage = {
-    id: `ai-${Date.now()}`,
-    role: "assistant",
-    content: response.data.message,
-    timestamp: new Date()
-  };
-
-  return aiMessage;
 };
 
 export const endSession = async (
@@ -86,6 +104,9 @@ export const endSession = async (
   designLevel: string
 ): Promise<string> => {
   try {
+    console.log(`Ending session with company: ${companyName}, level: ${designLevel}`);
+    console.log(`Chat history length: ${chatHistory.length}`);
+    
     const response = await supabase.functions.invoke('interview-chat', {
       body: {
         action: "end",
@@ -98,7 +119,10 @@ export const endSession = async (
       }
     });
 
+    console.log("Function response:", response);
+
     if (response.error) {
+      console.error("Error from function:", response.error);
       throw new Error(response.error.message);
     }
 

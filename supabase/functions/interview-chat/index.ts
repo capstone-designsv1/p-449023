@@ -8,6 +8,7 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 interface ChatMessage {
@@ -21,26 +22,35 @@ interface ChatRequest {
   designLevel?: "Junior" | "Senior" | "Lead";
   message?: string;
   history?: ChatMessage[];
+  industry?: string;
+  chunkResponses?: boolean;
 }
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log("Request received:", req.method, req.url);
+  
+  // Handle CORS preflight requests - this is crucial!
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    console.log("Handling CORS preflight request");
+    return new Response(null, { 
+      status: 204, 
+      headers: corsHeaders 
+    });
   }
 
   try {
     if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is not set");
       throw new Error("GEMINI_API_KEY is not set");
     }
 
     const requestData: ChatRequest = await req.json();
-    const { action, companyName, designLevel, message, history } = requestData;
+    const { action, companyName, designLevel, message, history, industry } = requestData;
 
-    console.log(`Processing ${action} request for ${companyName} at ${designLevel} level`);
+    console.log(`Processing ${action} request for ${companyName} at ${designLevel} level in ${industry || 'unspecified'} industry`);
 
     let systemPrompt = "";
     let userMessage = "";
@@ -49,7 +59,7 @@ serve(async (req) => {
     switch (action) {
       case "start":
         // Create the initial system prompt
-        systemPrompt = getStartPrompt(companyName!, designLevel!);
+        systemPrompt = getStartPrompt(companyName!, designLevel!, industry);
         responseData = await callGeminiAPIWithRetry(systemPrompt);
         break;
 
@@ -63,7 +73,7 @@ serve(async (req) => {
         
         // Build prompt with context and new message
         userMessage = message;
-        systemPrompt = getChatPrompt(companyName!, designLevel!, formattedHistory, userMessage);
+        systemPrompt = getChatPrompt(companyName!, designLevel!, formattedHistory, userMessage, industry);
         responseData = await callGeminiAPIWithRetry(systemPrompt);
         break;
 
@@ -88,6 +98,8 @@ serve(async (req) => {
         throw new Error(`Unknown action: ${action}`);
     }
 
+    console.log("Responding with data:", JSON.stringify(responseData).substring(0, 100) + "...");
+    
     return new Response(
       JSON.stringify(responseData),
       { 
@@ -107,7 +119,7 @@ serve(async (req) => {
         message: getFallbackMessage(error)
       }),
       { 
-        status: 500, 
+        status: 200, // Return 200 even for errors to avoid CORS issues 
         headers: { 
           ...corsHeaders, 
           "Content-Type": "application/json" 
@@ -129,8 +141,10 @@ function getFallbackMessage(error: any): string {
 }
 
 // Helper function to get the initial prompt
-function getStartPrompt(companyName: string, designLevel: string): string {
-  return `You are a senior product design interviewer at ${companyName}. You're conducting a ${designLevel} Product Designer interview. 
+function getStartPrompt(companyName: string, designLevel: string, industry?: string): string {
+  const industryContext = industry ? ` Your company is in the ${industry} industry.` : '';
+  
+  return `You are a senior product design interviewer at ${companyName}.${industryContext} You're conducting a ${designLevel} Product Designer interview. 
   
 Your task is to simulate a realistic product design interview experience focusing on whiteboard challenges and design thinking.
 
@@ -146,8 +160,10 @@ CRUCIAL: Your response must be less than 300 characters. Be very brief and direc
 }
 
 // Helper function to get the continuation prompt
-function getChatPrompt(companyName: string, designLevel: string, history: string, userMessage: string): string {
-  return `You are a senior product design interviewer at ${companyName}. You're conducting a ${designLevel} Product Designer interview.
+function getChatPrompt(companyName: string, designLevel: string, history: string, userMessage: string, industry?: string): string {
+  const industryContext = industry ? ` Your company is in the ${industry} industry.` : '';
+  
+  return `You are a senior product design interviewer at ${companyName}.${industryContext} You're conducting a ${designLevel} Product Designer interview.
 
 INTERVIEW HISTORY:
 ${history}
@@ -234,11 +250,16 @@ async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<a
       }
     };
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    const apiUrl = `${GEMINI_API_URL}?key=${GEMINI_API_KEY}`;
+    console.log(`Making request to: ${GEMINI_API_URL} (key length: ${GEMINI_API_KEY?.length || 0})`);
+    
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody)
     });
+
+    console.log(`Gemini API response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -256,6 +277,7 @@ async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<a
     }
 
     const data = await response.json();
+    console.log("Gemini API response data:", JSON.stringify(data).substring(0, 100) + "...");
     
     if (!data.candidates || data.candidates.length === 0) {
       if (retryCount < MAX_RETRIES - 1) {
@@ -278,6 +300,8 @@ async function callGeminiAPIWithRetry(prompt: string, retryCount = 0): Promise<a
     
     return { message };
   } catch (error) {
+    console.error(`Error calling Gemini API: ${error.message}`);
+    
     if (retryCount < MAX_RETRIES - 1) {
       const delayMs = RETRY_DELAY_MS * Math.pow(2, retryCount);
       console.log(`Error: ${error.message}, retrying in ${delayMs}ms...`);
