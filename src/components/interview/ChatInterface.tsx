@@ -1,90 +1,79 @@
-
 import React from "react";
-import { useInterviewChat } from "@/hooks/useInterviewChat";
-import ChatMessages from "./ChatMessages";
-import InterviewChatInput from "./InterviewChatInput";
-import InterviewVoiceModeToggle from "./InterviewVoiceModeToggle";
-import EndInterviewButton from "./EndInterviewButton";
-import InitializingIndicator from "./InitializingIndicator";
-import { FormattedFeedback } from "@/services/interviewChatService";
+import { useChallengeContext } from "@/context/ChallengeContext";
+import ChatMessageList from "./ChatMessageList";
+import ChatInput from "./ChatInput";
+import SubmitEvaluationButton from "./SubmitEvaluationButton";
+import { useChatLogic } from "@/hooks/useChatLogic";
+import { useVoiceControl } from "@/hooks/useVoiceControl";
+import VoiceModeToggle from "./VoiceModeToggle";
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
 interface ChatInterfaceProps {
-  companyName: string;
-  designLevel: "Junior" | "Senior" | "Lead";
-  onSessionEnd: (feedback: FormattedFeedback) => void;
+  onSubmitForEvaluation: (data: { chatHistory?: ChatMessage[] }) => void;
+  isEvaluating: boolean;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
-  companyName,
-  designLevel,
-  onSessionEnd,
+  onSubmitForEvaluation,
+  isEvaluating
 }) => {
+  const { chatHistory, setChatHistory, activeChallenge } = useChallengeContext();
+  const { isSending, sendMessage } = useChatLogic(activeChallenge, chatHistory, setChatHistory);
+  
   const {
-    chatHistory,
-    isInitializing,
-    messagesEndRef,
-    newMessage,
-    setNewMessage,
-    isSending,
     isVoiceMode,
     isListening,
     isSpeaking,
-    currentVoice,
-    handleSendMessage,
-    handleEndSession,
+    inputText,
+    setInputText,
     toggleVoiceMode,
     toggleListening,
-    toggleSpeaking,
-    changeVoice
-  } = useInterviewChat({
-    companyName,
-    designLevel,
-    onSessionEnd
+    toggleSpeaking
+  } = useVoiceControl({
+    chatHistory,
+    sendMessage
   });
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 mb-4">
-        {isInitializing ? (
-          <InitializingIndicator />
-        ) : (
-          <ChatMessages 
-            messages={chatHistory} 
-            messagesEndRef={messagesEndRef}
-            isSpeaking={isSpeaking}
-            toggleSpeaking={toggleSpeaking}
-          />
-        )}
+    <div className="flex-1 flex flex-col mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-lg font-semibold">Interview Partner</h2>
+        <VoiceModeToggle 
+          isVoiceMode={isVoiceMode}
+          toggleVoiceMode={toggleVoiceMode}
+        />
       </div>
-
-      <div className="border-t p-4">
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center gap-2">
-            <InterviewVoiceModeToggle 
-              isVoiceMode={isVoiceMode}
-              toggleVoiceMode={toggleVoiceMode}
-            />
-          
-            <InterviewChatInput 
-              newMessage={newMessage}
-              setNewMessage={setNewMessage}
-              handleSendMessage={handleSendMessage}
-              isSending={isSending}
-              isInitializing={isInitializing}
-              isListening={isListening}
-              toggleListening={isVoiceMode ? toggleListening : undefined}
-              isVoiceMode={isVoiceMode}
-            />
-          </div>
-
-          <EndInterviewButton 
-            handleEndSession={handleEndSession}
-            isSending={isSending}
-            isInitializing={isInitializing}
-            chatHistoryLength={chatHistory.length}
-          />
-        </div>
-      </div>
+      
+      {/* Chat Messages */}
+      <ChatMessageList 
+        messages={chatHistory}
+        isSpeaking={isSpeaking}
+        toggleSpeaking={toggleSpeaking}
+      />
+      
+      {/* Message Input */}
+      <ChatInput 
+        onSendMessage={sendMessage} 
+        isSending={isSending}
+        inputText={inputText}
+        setInputText={setInputText}
+        isVoiceMode={isVoiceMode}
+        isListening={isListening}
+        toggleListening={toggleListening}
+      />
+      
+      {/* Submit for Evaluation Button */}
+      <SubmitEvaluationButton 
+        chatHistory={chatHistory}
+        onSubmit={onSubmitForEvaluation}
+        isEvaluating={isEvaluating}
+      />
     </div>
   );
 };

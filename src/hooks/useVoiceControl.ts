@@ -1,9 +1,8 @@
-
 import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSpeechToText } from "./useSpeechToText";
 import { useTextToSpeech, ElevenLabsVoice } from "./useTextToSpeech";
-import { ChatMessage } from "@/services/interviewChatService";
+import { ChatMessage } from "@/services/interview";
 
 interface UseVoiceControlProps {
   chatHistory: ChatMessage[];
