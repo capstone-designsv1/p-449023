@@ -3,6 +3,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import { formatFeedbackItem, parseJsonString } from "@/utils/feedbackFormatter";
 
 export interface FormattedFeedback {
   score: number;
@@ -39,7 +40,7 @@ const FeedbackDisplay: React.FC<FeedbackDisplayProps> = ({
           <AccordionItem value="overview" className="border-b-0">
             <AccordionTrigger className="text-lg font-semibold py-4">Overview</AccordionTrigger>
             <AccordionContent className="text-base">
-              <p className="whitespace-pre-line">{feedback.overview}</p>
+              <p className="whitespace-pre-line">{parseJsonString(feedback.overview)}</p>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -54,7 +55,7 @@ const FeedbackDisplay: React.FC<FeedbackDisplayProps> = ({
             {feedback.topPriorities.map((priority, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="font-medium text-amber-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
-                <p className="text-amber-900">{priority}</p>
+                <p className="text-amber-900">{formatFeedbackItem(priority)}</p>
               </li>
             ))}
           </ul>
@@ -70,7 +71,7 @@ const FeedbackDisplay: React.FC<FeedbackDisplayProps> = ({
             {feedback.strengths.map((strength, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="font-medium text-green-700 mt-0.5 min-w-[20px]">•</span>
-                <p className="text-green-900">{strength}</p>
+                <p className="text-green-900">{formatFeedbackItem(strength)}</p>
               </li>
             ))}
           </ul>
@@ -86,7 +87,7 @@ const FeedbackDisplay: React.FC<FeedbackDisplayProps> = ({
             {feedback.nextSteps.map((step, index) => (
               <li key={index} className="flex items-start gap-2">
                 <span className="font-medium text-blue-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
-                <p className="text-blue-900">{step}</p>
+                <p className="text-blue-900">{formatFeedbackItem(step)}</p>
               </li>
             ))}
           </ul>

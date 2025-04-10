@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useChallengeContext } from "@/context/ChallengeContext";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
+import { formatFeedbackItem, parseJsonString } from "@/utils/feedbackFormatter";
 
 interface EvaluationResultsProps {
   isOpen: boolean;
@@ -42,10 +43,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
     
     // Add the main weakness first if available
     if (evaluationWeaknesses?.mainWeakness) {
-      const mainWeakness = typeof evaluationWeaknesses.mainWeakness === 'string' 
-        ? evaluationWeaknesses.mainWeakness 
-        : JSON.stringify(evaluationWeaknesses.mainWeakness);
-      priorities.push(mainWeakness);
+      priorities.push(formatFeedbackItem(evaluationWeaknesses.mainWeakness));
     }
     
     // Add other improvements to fill out our list (up to 3 total)
@@ -53,10 +51,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
       const remainingSlots = 3 - priorities.length;
       if (remainingSlots > 0) {
         evaluationImprovements.slice(0, remainingSlots).forEach(improvement => {
-          const cleanImprovement = typeof improvement === 'string' 
-            ? improvement 
-            : JSON.stringify(improvement);
-          priorities.push(cleanImprovement);
+          priorities.push(formatFeedbackItem(improvement));
         });
       }
     }
@@ -68,9 +63,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
   const getTopStrengths = (): string[] => {
     if (!evaluationStrengths || evaluationStrengths.length === 0) return [];
     
-    return evaluationStrengths.slice(0, 2).map(strength => 
-      typeof strength === 'string' ? strength : JSON.stringify(strength)
-    );
+    return evaluationStrengths.slice(0, 2).map(strength => formatFeedbackItem(strength));
   };
   
   // Get 1-2 next steps - prioritizing dedicated next steps, falling back to actionable tips
@@ -78,13 +71,9 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
     let steps: string[] = [];
     
     if (evaluationNextSteps && evaluationNextSteps.length > 0) {
-      steps = evaluationNextSteps.slice(0, 2).map(step => 
-        typeof step === 'string' ? step : JSON.stringify(step)
-      );
+      steps = evaluationNextSteps.slice(0, 2).map(step => formatFeedbackItem(step));
     } else if (evaluationActionable && evaluationActionable.length > 0) {
-      steps = evaluationActionable.slice(0, 2).map(action => 
-        typeof action === 'string' ? action : JSON.stringify(action)
-      );
+      steps = evaluationActionable.slice(0, 2).map(action => formatFeedbackItem(action));
     }
     
     return steps;
@@ -117,7 +106,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
             {/* Overall Assessment */}
             <div className="space-y-2 bg-gray-50 p-4 rounded-lg">
               <h3 className="text-lg font-semibold">Overall Assessment</h3>
-              <p className="text-gray-700 whitespace-pre-line">{feedback}</p>
+              <p className="text-gray-700 whitespace-pre-line">{parseJsonString(feedback || "")}</p>
             </div>
             
             {/* Top Priorities to Improve */}
