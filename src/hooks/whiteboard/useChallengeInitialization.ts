@@ -30,7 +30,7 @@ export const useChallengeInitialization = () => {
           if (parsedChallenge.id === challengeId) {
             setActiveChallenge(parsedChallenge);
             clearChatHistory();
-            toast.success(`Challenge loaded: ${parsedChallenge.title}`);
+            // Notification removed for routine challenge loading
             return;
           }
         } catch (error) {
@@ -69,7 +69,7 @@ export const useChallengeInitialization = () => {
       
       setActiveChallenge(generatedChallenge);
       clearChatHistory();
-      toast.success(`Challenge loaded: ${generatedChallenge.title}`);
+      // Notification removed for routine challenge loading
       
     } catch (error) {
       console.error("Error initializing challenge:", error);

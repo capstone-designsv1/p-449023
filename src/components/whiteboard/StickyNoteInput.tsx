@@ -38,12 +38,12 @@ const StickyNoteInput: React.FC<StickyNoteInputProps> = ({ notes, setNotes }) =>
     
     setNotes([...notes, newNote]);
     setNewNoteText("");
-    toast.success("Sticky note added!");
+    // Removed toast notification for routine note creation
   };
 
   const deleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
-    toast.success("Sticky note removed");
+    // Removed toast notification for routine note deletion
   };
 
   return (

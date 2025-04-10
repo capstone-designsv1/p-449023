@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 export interface ShapeType {
   id: string;
@@ -21,7 +20,7 @@ export const useShapes = () => {
 
   const deleteShape = (id: string) => {
     setShapes(shapes.filter(shape => shape.id !== id));
-    toast.success("Shape removed");
+    // Removed toast notification for routine shape deletion
   };
 
   return {

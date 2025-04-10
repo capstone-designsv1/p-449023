@@ -1,6 +1,5 @@
 
 import { useChallengeContext } from "@/context/ChallengeContext";
-import { toast } from "sonner";
 
 interface Note {
   id: string;
@@ -26,7 +25,7 @@ export const useNotes = () => {
 
   const deleteNote = (id: string) => {
     setNotes(notes.filter(note => note.id !== id));
-    toast.success("Sticky note removed");
+    // Removed toast notification for routine note deletion
   };
 
   return {

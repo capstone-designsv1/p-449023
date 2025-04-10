@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import { toast } from "sonner";
 
 export interface ArrowType {
   id: string;
@@ -32,7 +31,7 @@ export const useArrows = () => {
 
   const deleteArrow = (id: string) => {
     setArrows(arrows.filter(arrow => arrow.id !== id));
-    toast.success("Arrow removed");
+    // Removed toast notification for routine arrow deletion
   };
 
   return {

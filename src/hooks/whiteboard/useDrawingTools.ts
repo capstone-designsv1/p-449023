@@ -1,6 +1,5 @@
 
 import { useRef, useState } from "react";
-import { toast } from "sonner";
 import { WhiteboardTool } from "./useWhiteboardTools";
 
 export interface DrawingPoint {
@@ -17,7 +16,7 @@ export const useDrawingTools = (context: CanvasRenderingContext2D | null) => {
     
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, canvas.width, canvas.height);
-    toast.success("Canvas cleared");
+    // Removed toast notification for routine canvas clearing
   };
   
   const startDrawing = (
