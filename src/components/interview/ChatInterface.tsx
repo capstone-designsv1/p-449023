@@ -6,11 +6,12 @@ import InterviewChatInput from "./InterviewChatInput";
 import InterviewVoiceModeToggle from "./InterviewVoiceModeToggle";
 import EndInterviewButton from "./EndInterviewButton";
 import InitializingIndicator from "./InitializingIndicator";
+import { FormattedFeedback } from "@/services/interviewChatService";
 
 interface ChatInterfaceProps {
   companyName: string;
   designLevel: "Junior" | "Senior" | "Lead";
-  onSessionEnd: (feedback: string) => void;
+  onSessionEnd: (feedback: FormattedFeedback) => void;
 }
 
 const ChatInterface: React.FC<ChatInterfaceProps> = ({

@@ -5,7 +5,7 @@ import InterviewHeader from "@/components/interview/InterviewHeader";
 import InterviewSetup from "@/components/interview/InterviewSetup";
 import InterviewTabs from "@/components/interview/InterviewTabs";
 import { CompanyInfoType } from "@/components/interview/CompanyInfo";
-import { InterviewFeedback } from "@/components/interview/FeedbackDisplay";
+import { FormattedFeedback } from "@/services/interviewChatService";
 
 const companies: Record<string, CompanyInfoType> = {
   "uber": {
@@ -33,7 +33,7 @@ const InterviewChat: React.FC = () => {
   const navigate = useNavigate();
   const [designLevel, setDesignLevel] = useState<"Junior" | "Senior" | "Lead">("Junior");
   const [interviewStarted, setInterviewStarted] = useState(false);
-  const [feedback, setFeedback] = useState<InterviewFeedback | null>(null);
+  const [feedback, setFeedback] = useState<FormattedFeedback | null>(null);
   const [activeTab, setActiveTab] = useState<"chat" | "feedback">("chat");
 
   const company = companyId && companies[companyId] ? companies[companyId] : companies.uber;
@@ -42,30 +42,9 @@ const InterviewChat: React.FC = () => {
     setInterviewStarted(true);
   };
 
-  const handleSessionEnd = (feedbackText: string) => {
-    // Parse the feedback string into structured feedback
-    // This is a simplified version - in a real app, the API would return structured data
-    try {
-      // This is a placeholder for parsing the feedback text
-      // In reality, your API should return structured data
-      const parsedFeedback: InterviewFeedback = {
-        score: 85, // Example score
-        feedback: feedbackText,
-        strengths: ["Communication skills", "Design process knowledge"],
-        improvements: ["Consider more edge cases", "Ask more clarifying questions"]
-      };
-      
-      setFeedback(parsedFeedback);
-      setActiveTab("feedback");
-    } catch (error) {
-      console.error("Error parsing feedback:", error);
-      setFeedback({
-        score: 0,
-        feedback: feedbackText,
-        strengths: [],
-        improvements: []
-      });
-    }
+  const handleSessionEnd = (feedbackData: FormattedFeedback) => {
+    setFeedback(feedbackData);
+    setActiveTab("feedback");
   };
 
   const handleBackToList = () => {
