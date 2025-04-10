@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -6,7 +5,7 @@ import WhiteboardArea from "@/components/whiteboard/WhiteboardArea";
 import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
-import { useChallengeTimer } from "@/hooks/useChallengeTimer";
+import { useChallengeTimer } from "@/hooks/timer"; // Updated import path
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
