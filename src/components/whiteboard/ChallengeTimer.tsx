@@ -9,22 +9,26 @@ interface ChallengeTimerProps {
   timeRemainingPercentage: number;
   isActive: boolean;
   isLoading: boolean;
+  secondsRemaining: number;
 }
 
 const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
   timeRemaining,
   timeRemainingPercentage,
   isActive,
-  isLoading
+  isLoading,
+  secondsRemaining
 }) => {
   const [isWarning, setIsWarning] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
+  const [isCritical, setIsCritical] = useState(false);
   
-  // Update warning states based on percentage
+  // Update warning states based on percentage and time remaining
   useEffect(() => {
     setIsWarning(timeRemainingPercentage <= 30);
     setIsUrgent(timeRemainingPercentage <= 10);
-  }, [timeRemainingPercentage]);
+    setIsCritical(secondsRemaining <= 300); // 5 minutes or less
+  }, [timeRemainingPercentage, secondsRemaining]);
 
   // Determine the appropriate color based on time remaining
   const getProgressColor = () => {
@@ -37,7 +41,9 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div className={`flex items-center gap-2 bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-shadow duration-200 ${
+            isCritical ? 'animate-pulse border-red-500' : ''
+          }`}>
             {isUrgent ? (
               <AlertCircle className="h-4 w-4 text-destructive animate-pulse" />
             ) : (
@@ -49,11 +55,13 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
                 <div className="h-5 w-16 bg-muted animate-pulse rounded"></div>
               ) : (
                 <span className={`font-medium text-sm ${
-                  isUrgent 
-                    ? "text-destructive animate-pulse" 
-                    : isWarning 
-                      ? "text-amber-600" 
-                      : "text-primary"
+                  isCritical 
+                    ? "text-destructive animate-pulse font-bold" 
+                    : isUrgent 
+                      ? "text-destructive" 
+                      : isWarning 
+                        ? "text-amber-600" 
+                        : "text-primary"
                 }`}>
                   {timeRemaining}
                 </span>
@@ -61,7 +69,7 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
               
               <Progress 
                 value={timeRemainingPercentage} 
-                className="h-1.5 w-full bg-secondary/60"
+                className={`h-1.5 w-full bg-secondary/60 ${isCritical ? 'animate-pulse' : ''}`}
                 indicatorClassName={getProgressColor()}
               />
             </div>
@@ -71,6 +79,8 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
           {isLoading ? (
             <p>Calculating challenge time...</p>
           ) : isActive ? (
+            isCritical ? 
+            <p className="text-destructive font-bold">Less than 5 minutes remaining!</p> :
             <p>Time remaining for this challenge</p>
           ) : (
             <p>Challenge time has expired</p>

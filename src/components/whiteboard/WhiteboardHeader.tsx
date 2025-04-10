@@ -12,6 +12,7 @@ interface WhiteboardHeaderProps {
   timeRemainingPercentage: number;
   isTimerActive: boolean;
   isTimerLoading: boolean;
+  secondsRemaining: number;
 }
 
 const WhiteboardHeader: React.FC<WhiteboardHeaderProps> = ({
@@ -21,7 +22,8 @@ const WhiteboardHeader: React.FC<WhiteboardHeaderProps> = ({
   timeRemaining,
   timeRemainingPercentage,
   isTimerActive,
-  isTimerLoading
+  isTimerLoading,
+  secondsRemaining
 }) => {
   return (
     <div className="bg-white border-b border-gray-200 p-4">
@@ -46,6 +48,7 @@ const WhiteboardHeader: React.FC<WhiteboardHeaderProps> = ({
           timeRemainingPercentage={timeRemainingPercentage}
           isActive={isTimerActive}
           isLoading={isTimerLoading}
+          secondsRemaining={secondsRemaining}
         />
       </div>
     </div>

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import WhiteboardHeader from "@/components/whiteboard/WhiteboardHeader";
 import WhiteboardSidebar from "@/components/whiteboard/WhiteboardSidebar";
@@ -42,7 +43,8 @@ const WhiteboardContent: React.FC = () => {
     isActive: isTimerActive,
     isLoading: isTimerLoading,
     error: timerError,
-    totalMinutes
+    totalMinutes,
+    secondsRemaining
   } = useChallengeTimer({
     challengeId,
     designLevel,
@@ -91,6 +93,7 @@ const WhiteboardContent: React.FC = () => {
           timeRemainingPercentage={timeRemainingPercentage}
           isTimerActive={isTimerActive}
           isTimerLoading={isTimerLoading}
+          secondsRemaining={secondsRemaining}
         />
       )}
 
