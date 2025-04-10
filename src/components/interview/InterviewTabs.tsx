@@ -2,7 +2,7 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ChatInterface from "@/components/interview/ChatInterface";
-import { FormattedFeedback } from "@/services/interview"; // Updated import
+import { FormattedFeedback } from "@/services/interview"; 
 import FeedbackDisplay from "./FeedbackDisplay";
 
 interface InterviewTabsProps {
