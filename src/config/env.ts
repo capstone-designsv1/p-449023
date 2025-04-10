@@ -1,6 +1,6 @@
 
 export const env = {
-  ELEVEN_LABS_API_KEY: import.meta.env.VITE_ELEVEN_LABS_API_KEY || 'sk_fbc8881397b7a9ca119ff7d57edf567c695988caaa80a464',
+  ELEVEN_LABS_API_KEY: import.meta.env.VITE_ELEVEN_LABS_API_KEY || 'your_new_api_key_here',
   // Add other environment variables as needed
 };
 
