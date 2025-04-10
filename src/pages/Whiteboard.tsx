@@ -6,7 +6,9 @@ import WhiteboardArea from "@/components/whiteboard/WhiteboardArea";
 import EvaluationResults from "@/components/whiteboard/EvaluationResults";
 import { ChallengeProvider, useChallengeContext } from "@/context/ChallengeContext";
 import { useWhiteboard } from "@/hooks/useWhiteboard";
+import { useChallengeTimer } from "@/hooks/useChallengeTimer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 
 const WhiteboardContent: React.FC = () => {
   const { 
@@ -25,11 +27,51 @@ const WhiteboardContent: React.FC = () => {
     arrows, updateArrow, addArrow, deleteArrow
   } = useWhiteboard();
 
+  // Extract challenge details for the timer
+  const challengeId = activeChallenge?.id || "";
+  const designLevel = activeChallenge?.company?.includes("Junior") 
+    ? "Junior" 
+    : activeChallenge?.company?.includes("Lead") 
+      ? "Lead" 
+      : "Senior";
+  const industry = activeChallenge?.industry || "";
+
+  // Initialize the timer
+  const {
+    timeRemaining,
+    timeRemainingPercentage,
+    isActive: isTimerActive,
+    isLoading: isTimerLoading,
+    error: timerError,
+    totalMinutes
+  } = useChallengeTimer({
+    challengeId,
+    designLevel,
+    industry,
+    title: activeChallenge?.title || "",
+    description: activeChallenge?.description || "",
+    onTimeExpired: () => {
+      toast.warning("Time's up! Submitting your challenge response now.", {
+        duration: 5000
+      });
+      handleSubmitForEvaluation({ finalAnswer: "Time expired - automatic submission" });
+    }
+  });
+
   useEffect(() => {
     if (activeChallenge) {
       setIsLoading(false);
     }
   }, [activeChallenge]);
+
+  // Show a notification when the timer is first set
+  useEffect(() => {
+    if (totalMinutes > 0 && !isTimerLoading) {
+      toast.info(`You have ${totalMinutes} minutes to complete this challenge`, {
+        duration: 5000
+      });
+    }
+  }, [totalMinutes, isTimerLoading]);
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50" style={{ fontFamily: "Space Grotesk, -apple-system, Roboto, Helvetica, sans-serif" }}>
@@ -46,6 +88,10 @@ const WhiteboardContent: React.FC = () => {
           title={activeChallenge.title} 
           company={activeChallenge.company}
           onBackToList={handleBackToList}
+          timeRemaining={timeRemaining}
+          timeRemainingPercentage={timeRemainingPercentage}
+          isTimerActive={isTimerActive}
+          isTimerLoading={isTimerLoading}
         />
       )}
 

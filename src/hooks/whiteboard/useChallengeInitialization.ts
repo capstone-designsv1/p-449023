@@ -10,6 +10,10 @@ export const useChallengeInitialization = () => {
   const { setActiveChallenge, clearChatHistory } = useChallengeContext();
 
   const handleBackToList = () => {
+    // Clear the timer when navigating back to the list
+    if (challengeId) {
+      localStorage.removeItem(`challenge_timer_${challengeId}`);
+    }
     navigate("/challenges");
   };
   
