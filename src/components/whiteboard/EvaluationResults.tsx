@@ -134,7 +134,7 @@ const EvaluationResults: React.FC<EvaluationResultsProps> = ({
               <ul className="space-y-2">
                 {getTopStrengths().map((strength, index) => (
                   <li key={index} className="flex items-start gap-2">
-                    <span className="font-medium text-green-700 mt-0.5 min-w-[20px]">•</span>
+                    <span className="font-medium text-green-700 mt-0.5 min-w-[20px]">{index + 1}.</span>
                     <p className="text-green-900">{strength}</p>
                   </li>
                 ))}

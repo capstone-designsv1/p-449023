@@ -28,8 +28,10 @@ export const parseJsonString = (text: string | null | undefined): string => {
         return parsed.text || parsed.message || parsed.content;
       }
       
-      // If it's another structure, convert to readable string
-      return JSON.stringify(parsed);
+      // If it's another structure, convert to readable string - avoid JSON syntax
+      return Object.entries(parsed)
+        .map(([key, value]) => `${value}`)
+        .join('. ');
     }
     
     // Return original text if not JSON
@@ -62,8 +64,10 @@ export const formatFeedbackItem = (item: any): string => {
       return item.text || item.message || item.content;
     }
     
-    // Fallback to JSON string
-    return JSON.stringify(item);
+    // For other objects, convert to readable text without JSON syntax
+    return Object.entries(item)
+      .map(([key, value]) => `${value}`)
+      .join('. ');
   }
   
   // Handle other types
