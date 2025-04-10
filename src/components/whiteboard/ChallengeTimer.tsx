@@ -37,31 +37,37 @@ const ChallengeTimer: React.FC<ChallengeTimerProps> = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border shadow-sm">
+          <div className="flex items-center gap-2 bg-background/95 backdrop-blur-sm px-3 py-1.5 rounded-full border shadow-sm hover:shadow-md transition-shadow duration-200">
             {isUrgent ? (
-              <AlertCircle className="h-4 w-4 text-red-500 animate-pulse" />
+              <AlertCircle className="h-4 w-4 text-destructive animate-pulse" />
             ) : (
-              <Clock className={`h-4 w-4 ${isWarning ? "text-amber-500" : "text-green-500"}`} />
+              <Clock className={`h-4 w-4 ${isWarning ? "text-amber-500" : "text-primary"}`} />
             )}
             
             <div className="flex flex-col gap-1 min-w-[80px]">
               {isLoading ? (
-                <div className="h-5 w-16 bg-gray-200 animate-pulse rounded"></div>
+                <div className="h-5 w-16 bg-muted animate-pulse rounded"></div>
               ) : (
-                <span className={`font-bold ${isUrgent ? "text-red-600 animate-pulse" : isWarning ? "text-amber-600" : "text-green-700"}`}>
+                <span className={`font-medium text-sm ${
+                  isUrgent 
+                    ? "text-destructive animate-pulse" 
+                    : isWarning 
+                      ? "text-amber-600" 
+                      : "text-primary"
+                }`}>
                   {timeRemaining}
                 </span>
               )}
               
               <Progress 
                 value={timeRemainingPercentage} 
-                className="h-1.5 w-full bg-gray-200"
+                className="h-1.5 w-full bg-secondary/60"
                 indicatorClassName={getProgressColor()}
               />
             </div>
           </div>
         </TooltipTrigger>
-        <TooltipContent>
+        <TooltipContent side="bottom" className="text-xs font-medium">
           {isLoading ? (
             <p>Calculating challenge time...</p>
           ) : isActive ? (
