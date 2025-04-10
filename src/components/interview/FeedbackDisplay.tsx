@@ -1,17 +1,9 @@
-
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { CheckCircle2, AlertTriangle, ArrowRight } from "lucide-react";
 import { formatFeedbackItem, parseJsonString } from "@/utils/feedbackFormatter";
-
-export interface FormattedFeedback {
-  score: number;
-  overview: string;
-  topPriorities: string[];
-  strengths: string[];
-  nextSteps: string[];
-}
+import { FormattedFeedback } from "@/services/interview";
 
 interface FeedbackDisplayProps {
   feedback: FormattedFeedback;

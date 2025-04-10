@@ -8,7 +8,7 @@ import {
   initializeChat, 
   sendMessageToAI, 
   endSession 
-} from "@/services/interviewChatService";
+} from "@/services/interview";
 import { toast } from "sonner";
 
 interface UseInterviewChatProps {

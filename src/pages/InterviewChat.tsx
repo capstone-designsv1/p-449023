@@ -1,11 +1,10 @@
-
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import InterviewHeader from "@/components/interview/InterviewHeader";
 import InterviewSetup from "@/components/interview/InterviewSetup";
 import InterviewTabs from "@/components/interview/InterviewTabs";
 import { CompanyInfoType } from "@/components/interview/CompanyInfo";
-import { FormattedFeedback } from "@/services/interviewChatService";
+import { FormattedFeedback } from "@/services/interview";
 
 const companies: Record<string, CompanyInfoType> = {
   "uber": {
